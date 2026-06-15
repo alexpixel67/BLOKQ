@@ -33,28 +33,23 @@
         .header-text p { font-size: 16px; color: #888; max-width: 600px; }
 
         /* BLUEPRINT GRID */
-        .blueprint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 1000px; }
+        .blueprint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 600px; }
         
-        .blueprint-card { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 12px; padding: 30px; text-align: center; position: relative; overflow: hidden; transition: 0.3s; height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .blueprint-card { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 12px; padding: 35px; text-align: center; position: relative; overflow: hidden; transition: 0.3s; height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
         /* Available State styling */
         .blueprint-card.available { cursor: pointer; }
         .blueprint-card.available:hover { transform: translateY(-5px); border-color: var(--accent-blue); box-shadow: 0 15px 30px rgba(0, 210, 255, 0.1); }
         
-        /* Missing File State styling */
-        .blueprint-card.locked { opacity: 0.4; filter: grayscale(90%); cursor: not-allowed; }
-        
-        .bp-icon { font-size: 50px; margin-bottom: 15px; }
-        .bp-title { font-size: 20px; font-weight: bold; color: var(--text-bright); margin-bottom: 10px; }
-        .bp-desc { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 15px; }
+        .bp-icon { font-size: 60px; margin-bottom: 20px; }
+        .bp-title { font-size: 22px; font-weight: bold; color: var(--text-bright); margin-bottom: 10px; }
+        .bp-desc { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 20px; }
         
         /* Badges */
         .bp-badge { position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .badge-ready { background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); border: 1px solid rgba(0, 231, 1, 0.2); }
-        .badge-locked { background: rgba(255, 255, 255, 0.05); color: #888; border: 1px solid rgba(255, 255, 255, 0.1); }
         
         .use-case-label { font-size: 11px; color: var(--accent-blue); font-weight: bold; margin-top: auto; }
-        .locked-label { font-size: 11px; color: #555; margin-top: auto; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -67,18 +62,17 @@
     <div class="content">
         <div class="header-text">
             <h1>Blueprint Library</h1>
-            <p>Select a foundational mathematical engine to begin building. BLOKQ Studio loads the visual environment directly upon selection.</p>
+            <p>Select an active mathematical blueprint to deploy your custom world configurations directly to the public lobby.</p>
         </div>
 
         <div class="blueprint-grid" id="library-grid">
-            <!-- Blueprint cards will be loaded instantly here -->
+            <!-- Active Blueprints Injected Here -->
         </div>
     </div>
 
-    <!-- DYNAMIC MANIFEST CONTROLLER -->
+    <!-- MANIFEST CONTROLLER -->
     <script>
-        // Declarative Manifest: You control exactly which blueprints are unlocked in your workspace.
-        // Simply toggle 'installed: true' when you create a new editor file in your repository!
+        // Declarative Manifest: Cleaned up to only expose your active workspace editor
         const blueprintCatalog = [
             {
                 id: "climb",
@@ -87,62 +81,31 @@
                 desc: "Push your luck mechanics. An entity travels further, the multiplier rises, and the player must cash out before the crash.",
                 useCase: "Crash, Chicken Crossing, Rocket Flight",
                 editorFile: "editor_climb.html",
-                installed: true // <-- TRUE: This is active and ready to go!
-            },
-            {
-                id: "grid",
-                title: "Dead Man's Grid",
-                icon: "💣",
-                desc: "Minesweeper logic. Players uncover safe tiles to build a multiplier and must avoid hidden traps.",
-                useCase: "Mines, Treasure Hunt, Gem Sweeper",
-                editorFile: "editor_grid.html",
-                installed: false // <-- FALSE: Locked safely as Coming Soon
-            },
-            {
-                id: "wheel",
-                title: "Dynamic Wheel",
-                icon: "🎡",
-                desc: "A physics-based rotational wheel with custom segments, colors, and weighted drop tables.",
-                useCase: "Lootboxes, Spin the Wheel, Roulette",
-                editorFile: "editor_wheel.html",
-                installed: false // <-- FALSE: Locked safely as Coming Soon
+                installed: true
             }
         ];
 
         function renderLibrary() {
             const grid = document.getElementById('library-grid');
-            grid.innerHTML = ""; // Clear loader
+            grid.innerHTML = ""; 
 
             blueprintCatalog.forEach(blueprint => {
                 const card = document.createElement('div');
+                card.className = "blueprint-card available";
+                card.onclick = () => { window.location.href = blueprint.editorFile; };
                 
-                if (blueprint.installed) {
-                    card.className = "blueprint-card available";
-                    card.onclick = () => { window.location.href = blueprint.editorFile; };
-                    
-                    card.innerHTML = `
-                        <div class="bp-badge badge-ready">Installed & Ready</div>
-                        <div class="bp-icon">${blueprint.icon}</div>
-                        <div class="bp-title">${blueprint.title}</div>
-                        <div class="bp-desc">${blueprint.desc}</div>
-                        <div class="use-case-label">Use Cases: ${blueprint.useCase}</div>
-                    `;
-                } else {
-                    card.className = "blueprint-card locked";
-                    card.innerHTML = `
-                        <div class="bp-badge badge-locked">Locked (Coming Soon)</div>
-                        <div class="bp-icon">${blueprint.icon}</div>
-                        <div class="bp-title">${blueprint.title}</div>
-                        <div class="bp-desc">${blueprint.desc}</div>
-                        <div class="locked-label">File: ${blueprint.editorFile}</div>
-                    `;
-                }
+                card.innerHTML = `
+                    <div class="bp-badge badge-ready">Installed & Ready</div>
+                    <div class="bp-icon">${blueprint.icon}</div>
+                    <div class="bp-title">${blueprint.title}</div>
+                    <div class="bp-desc">${blueprint.desc}</div>
+                    <div class="use-case-label">Use Cases: ${blueprint.useCase}</div>
+                `;
 
                 grid.appendChild(card);
             });
         }
 
-        // Render instantly with zero network dependencies
         window.addEventListener('DOMContentLoaded', renderLibrary);
     </script>
 </body>
