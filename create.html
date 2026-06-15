@@ -7,8 +7,14 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
-            --ide-bg: #0b1016; --ide-panel: #131a22; --ide-border: #222f3e;
-            --ide-highlight: #00e701; --accent-blue: #00d2ff; --text-main: #a9b6c2; --text-bright: #ffffff;
+            --ide-bg: #0b1016; 
+            --ide-panel: #131a22; 
+            --ide-border: #222f3e;
+            --ide-highlight: #00e701; 
+            --accent-blue: #00d2ff; 
+            --text-main: #a9b6c2; 
+            --text-bright: #ffffff;
+            --error-red: #ff4d4d;
         }
 
         body { background-color: var(--ide-bg); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
@@ -29,17 +35,25 @@
         /* BLUEPRINT GRID */
         .blueprint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 1000px; }
         
-        .blueprint-card { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
-        .blueprint-card:hover { transform: translateY(-5px); border-color: var(--accent-blue); box-shadow: 0 15px 30px rgba(0, 210, 255, 0.1); }
+        .blueprint-card { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 12px; padding: 30px; text-align: center; position: relative; overflow: hidden; transition: 0.3s; }
+        
+        /* Available State styling */
+        .blueprint-card.available { cursor: pointer; }
+        .blueprint-card.available:hover { transform: translateY(-5px); border-color: var(--accent-blue); box-shadow: 0 15px 30px rgba(0, 210, 255, 0.1); }
+        
+        /* Missing File State styling */
+        .blueprint-card.missing { opacity: 0.45; filter: grayscale(80%); }
         
         .bp-icon { font-size: 50px; margin-bottom: 20px; }
         .bp-title { font-size: 20px; font-weight: bold; color: var(--text-bright); margin-bottom: 10px; }
         .bp-desc { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 20px; }
         
-        .bp-badge { position: absolute; top: 15px; right: 15px; background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .locked { filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; }
-        .locked:hover { transform: none; border-color: var(--ide-border); box-shadow: none; }
-        .locked .bp-badge { background: rgba(255,255,255,0.1); color: #888; }
+        /* Badges */
+        .bp-badge { position: absolute; top: 15px; right: 15px; padding: 5px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .badge-ready { background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); border: 1px solid rgba(0, 231, 1, 0.2); }
+        .badge-missing { background: rgba(255, 77, 77, 0.1); color: var(--error-red); border: 1px solid rgba(255, 77, 77, 0.2); }
+        
+        .setup-instruction { font-size: 11px; font-family: monospace; background: #0b1016; padding: 8px; border-radius: 4px; border: 1px dashed var(--ide-border); color: #667; }
     </style>
 </head>
 <body>
@@ -51,46 +65,101 @@
 
     <div class="content">
         <div class="header-text">
-            <h1>Select a Blueprint</h1>
-            <p>Choose a foundational mathematical engine. You will be able to completely customize the visuals, themes, and mechanics in the next step.</p>
+            <h1>Blueprint Library</h1>
+            <p>Select a foundational gameplay archetype to begin building. BLOKQ automatically scans your files to see which editors are active.</p>
         </div>
 
-        <div class="blueprint-grid">
-            <!-- BLUEPRINT 1 -->
-            <div class="blueprint-card" onclick="window.location.href='editor_climb.html'">
-                <div class="bp-badge">Available</div>
-                <div class="bp-icon">📈</div>
-                <div class="bp-title">The Climb</div>
-                <div class="bp-desc">Push your luck mechanics. An entity travels further, the multiplier rises, and the player must cash out before the crash.</div>
-                <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold;">(Used for: Crash, Chicken Crossing)</div>
-            </div>
-
-            <!-- BLUEPRINT 2 -->
-            <div class="blueprint-card" onclick="window.location.href='editor_grid.html'">
-                <div class="bp-badge">Available</div>
-                <div class="bp-icon">💣</div>
-                <div class="bp-title">Dead Man's Grid</div>
-                <div class="bp-desc">Minesweeper logic. Players uncover safe tiles to build a multiplier and must avoid hidden traps.</div>
-                <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold;">(Used for: Mines, Treasure Hunt)</div>
-            </div>
-
-            <!-- BLUEPRINT 3 (LOCKED PROTOTYPE) -->
-            <div class="blueprint-card locked">
-                <div class="bp-badge">Pro Tier</div>
-                <div class="bp-icon">🎡</div>
-                <div class="bp-title">Dynamic Wheel</div>
-                <div class="bp-desc">A physics-based rotational wheel with custom segments, colors, and weighted drop tables.</div>
-            </div>
-            
-            <!-- BLUEPRINT 4 (LOCKED PROTOTYPE) -->
-            <div class="blueprint-card locked">
-                <div class="bp-badge">Coming Soon</div>
-                <div class="bp-icon">⚔️</div>
-                <div class="bp-title">The Duel</div>
-                <div class="bp-desc">Head-to-head streak combat mechanics. Attack or block based on weighted RNG stats.</div>
-            </div>
+        <div class="blueprint-grid" id="library-grid">
+            <!-- Dynamic Blueprint Cards will be injected and validated here -->
         </div>
     </div>
 
+    <!-- DYNAMIC SCANNING CONTROLLER -->
+    <script>
+        // Master Catalog of all available blueprints and where their editor files live
+        const blueprintCatalog = [
+            {
+                id: "climb",
+                title: "The Climb",
+                icon: "📈",
+                desc: "Push your luck mechanics. An entity travels further, the multiplier rises, and the player must cash out before the crash.",
+                useCase: "Crash, Chicken Crossing, Rocket Flight",
+                editorFile: "editor_climb.html"
+            },
+            {
+                id: "grid",
+                title: "Dead Man's Grid",
+                icon: "💣",
+                desc: "Minesweeper logic. Players uncover safe tiles to build a multiplier and must avoid hidden traps.",
+                useCase: "Mines, Treasure Hunt, Gem Sweeper",
+                editorFile: "editor_grid.html"
+            },
+            {
+                id: "wheel",
+                title: "Dynamic Wheel",
+                icon: "🎡",
+                desc: "A physics-based rotational wheel with custom segments, colors, and weighted drop tables.",
+                useCase: "Lootboxes, Spin the Wheel, Roulette",
+                editorFile: "editor_wheel.html"
+            }
+        ];
+
+        // Perform a sub-millisecond HEAD fetch to verify if the file exists on your web server [3]
+        async function checkFileExists(filename) {
+            try {
+                // HEAD fetch reads only the status headers without downloading the actual file, making it incredibly fast [3].
+                const response = await fetch(filename, { method: 'HEAD' });
+                
+                // If response is OK and not redirected (static fallbacks sometimes redirect 404s to index.html), the file is present
+                return response.ok && !response.redirected;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        async function scanAndBuildLibrary() {
+            const grid = document.getElementById('library-grid');
+            grid.innerHTML = ""; // Clear loader
+
+            for (const blueprint of blueprintCatalog) {
+                // Scan server directories for the file
+                const isAvailable = await checkFileExists(blueprint.editorFile);
+
+                const card = document.createElement('div');
+                
+                if (isAvailable) {
+                    card.className = "blueprint-card available";
+                    card.onclick = () => { window.location.href = blueprint.editorFile; };
+                    
+                    card.innerHTML = `
+                        <div class="bp-badge badge-ready">Ready to Edit</div>
+                        <div class="bp-icon">${blueprint.icon}</div>
+                        <div class="bp-title">${blueprint.title}</div>
+                        <div class="bp-desc">${blueprint.desc}</div>
+                        <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold; margin-top: auto;">
+                            Use Case: ${blueprint.useCase}
+                        </div>
+                    `;
+                } else {
+                    card.className = "blueprint-card missing";
+                    card.innerHTML = `
+                        <div class="bp-badge badge-missing">Uninstalled</div>
+                        <div class="bp-icon">${blueprint.icon}</div>
+                        <div class="bp-title">${blueprint.title}</div>
+                        <div class="bp-desc">${blueprint.desc}</div>
+                        <div class="setup-instruction">
+                            To unlock, create file:<br>
+                            <span style="color: var(--text-bright);">${blueprint.editorFile}</span>
+                        </div>
+                    `;
+                }
+
+                grid.appendChild(card);
+            }
+        }
+
+        // Run the dynamic server scan on page ready
+        window.addEventListener('DOMContentLoaded', scanAndBuildLibrary);
+    </script>
 </body>
 </html>
