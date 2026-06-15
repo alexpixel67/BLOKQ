@@ -3,188 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ Studio | Creator Engine</title>
+    <title>BLOKQ Studio | Workspace</title>
     <style>
-        /* CSS RESET & VARIABLES */
+        /* CSS RESET & IDE VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
-            --bg-dark: #0f1923;
-            --bg-panel: #1a2c38;
-            --bg-hover: #213743;
+            --ide-bg: #1e1e1e;
+            --ide-panel: #252526;
+            --ide-header: #333333;
+            --ide-border: #3e3e42;
+            --ide-highlight: #094771;
             --accent-green: #00e701;
-            --accent-cyan: #00f0ff;
-            --text-main: #ffffff;
-            --text-muted: #b0bec5;
-            --border-color: #2a3b47;
-            --border-radius: 12px;
-            --error-red: #ff4d4d;
+            --text-main: #cccccc;
+            --text-bright: #ffffff;
+            --error-red: #f48771;
+            --warn-yellow: #cca700;
         }
 
-        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        body { background-color: var(--ide-bg); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* SIDEBAR */
-        aside { width: 250px; background-color: var(--bg-panel); padding: 20px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); }
-        .logo { font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
-        .logo span { color: var(--accent-green); }
-        .nav-menu { display: flex; flex-direction: column; gap: 10px; list-style: none; }
-        .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
-        .nav-menu li:hover { background: var(--bg-hover); color: var(--text-main); }
-        .nav-menu li.active { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 231, 1, 0.2); }
+        /* TOP MENU BAR */
+        .top-bar { background-color: var(--ide-header); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ide-border); font-size: 13px; }
+        .top-bar-left { display: flex; align-items: center; gap: 20px; }
+        .brand { font-weight: 900; color: var(--text-bright); letter-spacing: 1px; }
+        .brand span { color: var(--accent-green); }
+        .menu-items { display: flex; gap: 15px; cursor: pointer; }
+        .menu-items span:hover { color: var(--text-bright); }
         
-        /* MAIN CONTENT */
-        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
-        
-        /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
-        .header-title { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-        .header-title span { background: var(--text-main); color: var(--bg-dark); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
-        .btn-publish { background: var(--accent-green); color: var(--bg-dark); padding: 10px 25px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-publish:hover { box-shadow: 0 0 15px rgba(0, 231, 1, 0.4); transform: translateY(-1px); }
-        .btn-publish:disabled { background: #3a4b57; color: #8fa0b5; cursor: not-allowed; box-shadow: none; transform: none; }
+        .toolbar { display: flex; gap: 10px; }
+        .btn-tool { background: #3a3d41; border: 1px solid var(--ide-border); color: var(--text-bright); padding: 5px 15px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-tool:hover { background: #4a4d51; }
+        .btn-primary { background: var(--accent-green); color: #000; border: none; font-weight: bold; }
+        .btn-primary:hover { background: #00c401; }
+        .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; }
 
         /* STUDIO LAYOUT */
-        .studio-container { padding: 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start; }
+        .studio-layout { display: flex; flex: 1; overflow: hidden; }
+
+        /* LEFT EXPLORER */
+        .explorer { width: 220px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; }
+        .panel-title { font-size: 11px; text-transform: uppercase; font-weight: bold; padding: 10px 15px; color: #888; letter-spacing: 1px; }
+        .tree-item { padding: 8px 15px 8px 25px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-left: 3px solid transparent; }
+        .tree-item:hover { background-color: #2a2d2e; }
+        .tree-item.active { background-color: #37373d; border-left-color: var(--accent-green); color: var(--text-bright); }
+
+        /* CENTER WORKSPACE */
+        .workspace { flex: 1; padding: 30px; overflow-y: auto; background-color: var(--ide-bg); }
         
-        /* PANELS */
-        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .panel-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-        .panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; margin-top: -15px; }
+        .workspace-header { margin-bottom: 25px; }
+        .world-title-input { background: transparent; border: none; border-bottom: 2px solid var(--ide-border); color: var(--text-bright); font-size: 28px; font-weight: bold; width: 100%; outline: none; padding-bottom: 10px; }
+        .world-title-input:focus { border-bottom-color: var(--accent-green); }
+
+        .helper-box { background: rgba(9, 71, 113, 0.2); border-left: 4px solid var(--ide-highlight); padding: 15px; border-radius: 4px; margin-bottom: 30px; font-size: 13px; line-height: 1.5; color: #9cdcfe; }
+
+        /* NODE ROWS (PAYTABLE) */
+        .node-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .node-table th { text-align: left; padding: 10px; font-size: 12px; color: #888; text-transform: uppercase; font-weight: normal; border-bottom: 1px solid var(--ide-border); }
+        .node-row { background: var(--ide-panel); border-bottom: 1px solid var(--ide-bg); transition: 0.1s; }
+        .node-row:hover { background: #2a2d2e; }
+        .node-row td { padding: 8px; }
         
-        /* INPUT GROUPS */
-        .input-row { display: flex; gap: 15px; margin-bottom: 20px; }
-        .input-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .input-group label { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .input-group input, .input-group select { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
-        .input-group input:focus, .input-group select:focus { border-color: var(--accent-cyan); }
-        
-        /* NODE EDITOR (PAYTABLE) */
-        .node-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .node-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; transition: 0.2s; }
-        .node-row:focus-within { border-color: var(--accent-green); }
-        .node-input { background: transparent; border: none; color: white; outline: none; font-size: 14px; width: 100%; }
+        .node-input { background: #1e1e1e; border: 1px solid var(--ide-border); color: var(--text-bright); padding: 8px 10px; border-radius: 4px; outline: none; width: 100%; font-size: 13px; }
+        .node-input:focus { border-color: var(--accent-green); }
         .node-input.number { text-align: right; }
-        .input-suffix { display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; }
-        .btn-remove { background: rgba(255, 77, 77, 0.1); color: var(--error-red); border: none; width: 35px; height: 35px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-remove:hover { background: var(--error-red); color: white; }
         
-        .btn-add-node { background: transparent; border: 1px dashed var(--border-color); color: var(--text-muted); width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-add-node:hover { border-color: var(--text-main); color: var(--text-main); }
-
-        /* RTP CALCULATOR WIDGET */
-        .rtp-widget { background: linear-gradient(180deg, #132233 0%, var(--bg-dark) 100%); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 30px; text-align: center; position: sticky; top: 100px; }
-        .rtp-title { font-size: 14px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
-        .rtp-value { font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 10px; transition: color 0.3s; }
-        .rtp-status { font-size: 13px; font-weight: bold; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-symbol { position: absolute; right: 10px; color: #888; font-size: 12px; pointer-events: none; }
         
-        /* Dynamic RTP Status Colors */
-        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); }
-        .status-warn { background: rgba(255, 170, 0, 0.1); color: #ffaa00; }
-        .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error-red); }
+        .btn-remove { background: transparent; color: var(--error-red); border: none; cursor: pointer; font-size: 16px; padding: 5px; opacity: 0.5; }
+        .btn-remove:hover { opacity: 1; }
+        
+        .btn-add { background: transparent; border: 1px dashed var(--ide-border); color: #888; padding: 12px; width: 100%; text-align: center; border-radius: 4px; cursor: pointer; font-size: 13px; margin-bottom: 40px; }
+        .btn-add:hover { border-color: var(--text-bright); color: var(--text-bright); }
 
-        .prob-total { display: flex; justify-content: space-between; font-size: 14px; padding-top: 20px; border-top: 1px dashed var(--border-color); margin-bottom: 20px; }
-        .prob-total span:last-child { font-weight: bold; font-family: monospace; font-size: 16px; }
+        /* PLAYTEST SIMULATOR */
+        .simulator-box { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 6px; padding: 20px; text-align: center; }
+        .sim-result { font-size: 24px; font-weight: bold; margin: 15px 0; min-height: 35px; color: var(--text-bright); }
 
+        /* RIGHT INSPECTOR */
+        .inspector { width: 300px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; overflow-y: auto; }
+        .prop-group { border-bottom: 1px solid var(--ide-border); padding: 20px; }
+        .prop-title { font-size: 12px; font-weight: bold; color: var(--text-bright); margin-bottom: 15px; text-transform: uppercase; }
+        
+        .math-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; }
+        .math-val { font-family: monospace; font-size: 15px; font-weight: bold; color: var(--text-bright); }
+        
+        .status-badge { padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; }
+        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 231, 1, 0.2); }
+        .status-error { background: rgba(244, 135, 113, 0.1); color: var(--error-red); border: 1px solid rgba(244, 135, 113, 0.2); }
+
+        .explainer-text { font-size: 12px; color: #888; line-height: 1.5; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <aside>
-        <div class="logo">🟩 BLOK<span>Q</span></div>
-        <ul class="nav-menu">
-            <li onclick="window.location.href='home.html'">⬅️ Return to Lobby</li>
-            <li class="active">🛠️ Studio Builder</li>
-            <li>📊 My Analytics</li>
-            <li>💰 Creator Yields</li>
-        </ul>
-    </aside>
-
-    <main>
-        <header>
-            <div class="header-title">
-                Visual Probability Engine <span>Creator Mode</span>
+    <!-- TOP TOOLBAR -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="brand">🟩 BLOK<span>Q</span> Studio</div>
+            <div class="menu-items">
+                <span onclick="window.location.href='home.html'">File</span>
+                <span>Edit</span>
+                <span>View</span>
+                <span>Help</span>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <span id="save-status" style="color: var(--text-muted); font-size: 12px; display: none;">Saving...</span>
-                <button class="btn-publish" id="publish-btn" disabled>Publish Protocol</button>
-            </div>
-        </header>
-
-        <div class="studio-container">
-            <!-- LEFT COLUMN: CONFIGURATION -->
-            <div class="config-area">
-                
-                <!-- GAME META PANEL -->
-                <div class="panel">
-                    <div class="panel-header">1. General Metadata</div>
-                    <div class="panel-desc">Define how your arcade module appears in the global decentralized lobby.</div>
-                    
-                    <div class="input-row">
-                        <div class="input-group" style="flex: 3;">
-                            <label>World Title</label>
-                            <input type="text" id="game-title" placeholder="e.g. Cyberpunk Weapon Crates" value="Custom Lootbox">
-                        </div>
-                        <div class="input-group" style="flex: 1;">
-                            <label>Icon Emoji</label>
-                            <input type="text" id="game-emoji" placeholder="📦" value="💎" maxlength="2" style="text-align: center; font-size: 20px;">
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label>Base Engine Template</label>
-                        <select id="game-engine">
-                            <option value="rng">Custom Probability Drops (Lootbox/RNG)</option>
-                            <option value="crash" disabled>Multiplayer Crash (Locked - Pro Tier)</option>
-                            <option value="plinko" disabled>Physics Plinko (Locked - Pro Tier)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- MATH & PAYTABLE PANEL -->
-                <div class="panel">
-                    <div class="panel-header">2. The Paytable Logic</div>
-                    <div class="panel-desc">Build your outcomes. The math is executed securely on-chain. Total probability must equal exactly 100%.</div>
-                    
-                    <!-- Table Headers -->
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; padding: 0 10px;">
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Outcome Name</span>
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Color Hex</span>
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; text-align: right;">Win Multiplier</span>
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; text-align: right;">Probability</span>
-                        <span style="width: 35px;"></span>
-                    </div>
-
-                    <div class="node-list" id="node-list">
-                        <!-- Dynamic Nodes injected here via JS -->
-                    </div>
-
-                    <button class="btn-add-node" id="add-node-btn">+ Add Outcome Node</button>
-                </div>
-
-            </div>
-
-            <!-- RIGHT COLUMN: LIVE ANALYTICS -->
-            <div>
-                <div class="rtp-widget">
-                    <div class="rtp-title">Calculated Return-To-Player (RTP)</div>
-                    <div class="rtp-value" id="rtp-display">0.00%</div>
-                    <div class="rtp-status status-error" id="rtp-status">Configuring Math...</div>
-                    
-                    <div class="prob-total">
-                        <span>Total Probability Load:</span>
-                        <span id="prob-display" style="color: var(--error-red);">0.00%</span>
-                    </div>
-
-                    <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; text-align: left;">
-                        <strong>What is RTP?</strong><br>
-                        If RTP is 95%, for every 100 BQ wagered, the game mathematically returns 95 BQ to players, creating a 5 BQ house edge for you as the creator.<br><br>
-                        <em>Note: To prevent protocol draining, maximum allowed RTP is 99%.</em>
-                    </p>
-                </div>
-            </div>
-
         </div>
-    </main>
+        <div class="toolbar">
+            <span id="save-status" style="margin-right: 15px; color: var(--accent-green); display: none;">✓ Saved to Protocol</span>
+            <button class="btn-tool" onclick="window.location.href='home.html'">Exit Studio</button>
+            <button class="btn-tool btn-primary" id="publish-btn">Publish to Lobby</button>
+        </div>
+    </div>
 
-    <!-- FIREBASE & STUDIO LOGIC -->
+    <div class="studio-layout">
+        <!-- EXPLORER (LEFT) -->
+        <div class="explorer">
+            <div class="panel-title">Workspace Explorer</div>
+            <div class="tree-item active">📄 Probability Matrix</div>
+            <div class="tree-item" style="opacity: 0.5; cursor: not-allowed;">🌍 3D Environment (Locked)</div>
+            <div class="tree-item" style="opacity: 0.5; cursor: not-allowed;">🎵 Audio Assets (Locked)</div>
+        </div>
+
+        <!-- WORKSPACE (CENTER) -->
+        <div class="workspace">
+            <div class="workspace-header">
+                <input type="text" id="world-title" class="world-title-input" placeholder="Enter World Name..." value="My Custom Simulator">
+            </div>
+
+            <div class="helper-box">
+                <strong>How it works:</strong> You are building a "Drop Table". When a player wagers 100 BQ tokens, the system rolls a random number. Based on the <strong>Chance (%)</strong>, it picks an outcome. It then multiplies their wager by the <strong>Payout (x)</strong> and awards it to them. If Payout is 0x, they lose their wager.
+            </div>
+
+            <table class="node-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Outcome Name</th>
+                        <th style="width: 10%;">Color</th>
+                        <th style="width: 20%;">Payout (x)</th>
+                        <th style="width: 25%;">Chance (%)</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="node-list">
+                    <!-- Nodes injected via JS -->
+                </tbody>
+            </table>
+
+            <button class="btn-add" id="add-node-btn">+ Add New Outcome</button>
+
+            <!-- PLAYTEST SIMULATOR -->
+            <div class="simulator-box">
+                <div style="font-size: 12px; color: #888; text-transform: uppercase; font-weight: bold;">Playtest Simulator</div>
+                <div class="sim-result" id="sim-result">Ready to test...</div>
+                <button class="btn-tool" style="margin: 0 auto; background: var(--ide-highlight); border: none;" onclick="runPlaytest()">▶ Run Simulation</button>
+            </div>
+        </div>
+
+        <!-- INSPECTOR (RIGHT) -->
+        <div class="inspector">
+            <div class="prop-group">
+                <div class="prop-title">Live Engine Analytics</div>
+                
+                <div class="math-stat">
+                    <span>Total Chance:</span>
+                    <span class="math-val" id="prob-display" style="color: var(--text-bright);">100.00%</span>
+                </div>
+                
+                <div class="math-stat" style="margin-top: 15px;">
+                    <span>Calculated RTP:</span>
+                    <span class="math-val" id="rtp-display">90.00%</span>
+                </div>
+
+                <div class="math-stat">
+                    <span>House Edge (Your Profit):</span>
+                    <span class="math-val" id="edge-display" style="color: var(--accent-green);">10.00%</span>
+                </div>
+
+                <div class="status-badge status-safe" id="math-status">
+                    Math Verified & Safe
+                </div>
+            </div>
+
+            <div class="prop-group">
+                <div class="prop-title">What is RTP?</div>
+                <div class="explainer-text">
+                    <strong>RTP (Return-To-Player)</strong> is the total percentage of wagered money mathematically paid back to players over time.<br><br>
+                    If your RTP is <strong>90%</strong>, for every 100 BQ wagered, players win back 90 BQ, and you (the creator) keep 10 BQ as profit (The House Edge).<br><br>
+                    <em>Note: The "Total Chance" must equal exactly 100%, and RTP cannot exceed 99% to prevent economy draining.</em>
+                </div>
+                <button class="btn-tool" style="width: 100%; justify-content: center; margin-top: 15px;" onclick="autoBalanceChance()">Auto-Balance Chances</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE STUDIO LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -196,19 +208,19 @@
 
         // UI Elements
         const nodeList = document.getElementById('node-list');
-        const addNodeBtn = document.getElementById('add-node-btn');
-        const rtpDisplay = document.getElementById('rtp-display');
-        const rtpStatus = document.getElementById('rtp-status');
-        const probDisplay = document.getElementById('prob-display');
         const publishBtn = document.getElementById('publish-btn');
-        const saveStatus = document.getElementById('save-status');
+        const probDisplay = document.getElementById('prob-display');
+        const rtpDisplay = document.getElementById('rtp-display');
+        const edgeDisplay = document.getElementById('edge-display');
+        const mathStatus = document.getElementById('math-status');
+        const simResult = document.getElementById('sim-result');
 
-        // Initial Paytable State (Default Lootbox setup)
+        // Safe Default Paytable (90% RTP / 10% Creator Edge)
         let paytable = [
-            { id: 1, name: "Scrap Metal", color: "#b0bec5", multiplier: 0.1, prob: 60.0 },
-            { id: 2, name: "Bronze Coin", color: "#cd7f32", multiplier: 1.5, prob: 30.0 },
-            { id: 3, name: "Silver Ingot", color: "#c0c0c0", multiplier: 5.0, prob: 9.0 },
-            { id: 4, name: "Gold Relic", color: "#ffca28", multiplier: 25.0, prob: 1.0 }
+            { id: 1, name: "Complete Loss", color: "#444444", multiplier: 0.0, prob: 60.0 },
+            { id: 2, name: "Small Win", color: "#3498db", multiplier: 1.5, prob: 30.0 },
+            { id: 3, name: "Medium Win", color: "#9b59b6", multiplier: 3.0, prob: 9.0 },
+            { id: 4, name: "Jackpot!", color: "#f1c40f", multiplier: 18.0, prob: 1.0 }
         ];
         let nodeIdCounter = 5;
 
@@ -224,47 +236,49 @@
                 db = getFirestore(app);
 
                 onAuthStateChanged(auth, (user) => {
-                    if (!user) {
-                        window.location.href = 'login.html';
-                    } else {
+                    if (!user) window.location.href = 'login.html';
+                    else {
                         activeUser = user;
                         renderNodes();
                     }
                 });
             } catch (error) {
                 console.error("Studio Init Error:", error);
-                // Render fallback for local testing
-                renderNodes();
+                renderNodes(); // Render for local testing without server
             }
         }
 
-        // 2. RENDER THE VISUAL EDITOR
+        // 2. RENDER WORKSPACE
         function renderNodes() {
             nodeList.innerHTML = "";
-            paytable.forEach((node, index) => {
-                const row = document.createElement('div');
-                row.className = 'node-row';
+            paytable.forEach((node) => {
+                const tr = document.createElement('tr');
+                tr.className = 'node-row';
                 
-                row.innerHTML = `
-                    <input type="text" class="node-input" value="${node.name}" placeholder="Item Name" data-id="${node.id}" data-field="name">
-                    
-                    <div class="input-suffix" style="padding: 4px 8px;">
-                        <input type="color" value="${node.color}" style="width:20px; height:20px; border:none; background:transparent; cursor:pointer;" data-id="${node.id}" data-field="color">
-                    </div>
-
-                    <div class="input-suffix">
-                        <input type="number" class="node-input number" value="${node.multiplier}" step="0.1" min="0" data-id="${node.id}" data-field="multiplier">
-                        <span style="color: var(--text-muted); font-weight: bold; margin-left: 5px;">x</span>
-                    </div>
-
-                    <div class="input-suffix">
-                        <input type="number" class="node-input number" value="${node.prob}" step="0.01" min="0" max="100" data-id="${node.id}" data-field="prob">
-                        <span style="color: var(--text-muted); font-weight: bold; margin-left: 5px;">%</span>
-                    </div>
-
-                    <button class="btn-remove" onclick="removeNode(${node.id})">×</button>
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" class="node-input" value="${node.name}" data-id="${node.id}" data-field="name">
+                    </td>
+                    <td>
+                        <input type="color" value="${node.color}" style="width:25px; height:25px; border:none; background:transparent; cursor:pointer;" data-id="${node.id}" data-field="color">
+                    </td>
+                    <td>
+                        <div class="input-wrapper">
+                            <input type="number" class="node-input number" value="${node.multiplier}" step="0.1" min="0" data-id="${node.id}" data-field="multiplier">
+                            <span class="input-symbol">x</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-wrapper">
+                            <input type="number" class="node-input number" value="${node.prob}" step="0.1" min="0" max="100" data-id="${node.id}" data-field="prob">
+                            <span class="input-symbol">%</span>
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn-remove" onclick="removeNode(${node.id})">✖</button>
+                    </td>
                 `;
-                nodeList.appendChild(row);
+                nodeList.appendChild(tr);
             });
 
             bindNodeInputs();
@@ -279,133 +293,137 @@
                     const field = e.target.getAttribute('data-field');
                     const value = e.target.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
                     
-                    const nodeIndex = paytable.findIndex(n => n.id === id);
-                    if (nodeIndex > -1) {
-                        paytable[nodeIndex][field] = value;
+                    const node = paytable.find(n => n.id === id);
+                    if (node) {
+                        node[field] = value;
                         if (field === 'prob' || field === 'multiplier') calculateMath();
                     }
                 });
             });
         }
 
-        addNodeBtn.addEventListener('click', () => {
-            paytable.push({
-                id: nodeIdCounter++,
-                name: "New Drop",
-                color: "#ffffff",
-                multiplier: 0.0,
-                prob: 0.0
-            });
+        document.getElementById('add-node-btn').addEventListener('click', () => {
+            paytable.push({ id: nodeIdCounter++, name: "New Outcome", color: "#ffffff", multiplier: 1.0, prob: 0.0 });
             renderNodes();
         });
 
         window.removeNode = function(id) {
-            if (paytable.length <= 1) return alert("You must have at least one outcome.");
+            if (paytable.length <= 1) return alert("A world must have at least one outcome.");
             paytable = paytable.filter(n => n.id !== id);
             renderNodes();
         }
 
-        // 3. SECURE REAL-TIME MATH CALCULATOR
+        // 3. AUTO-BALANCE HELPER
+        window.autoBalanceChance = function() {
+            let total = paytable.reduce((sum, node) => sum + node.prob, 0);
+            if (total === 0) return alert("Add some probability before auto-balancing.");
+            
+            paytable.forEach(node => {
+                // Scale proportional to their current values
+                node.prob = parseFloat(((node.prob / total) * 100).toFixed(2));
+            });
+            
+            // Fix minor rounding errors ensuring exact 100.00
+            let newTotal = paytable.reduce((sum, node) => sum + node.prob, 0);
+            let diff = parseFloat((100 - newTotal).toFixed(2));
+            if (diff !== 0) paytable[0].prob = parseFloat((paytable[0].prob + diff).toFixed(2));
+
+            renderNodes();
+        }
+
+        // 4. PLAYTEST SIMULATOR
+        window.runPlaytest = function() {
+            if (publishBtn.disabled) return alert("Fix math errors before simulating!");
+            
+            const roll = Math.random() * 100;
+            let cumulative = 0;
+            let result = paytable[0];
+
+            for (const node of paytable) {
+                cumulative += node.prob;
+                if (roll <= cumulative) {
+                    result = node;
+                    break;
+                }
+            }
+
+            simResult.innerText = `Rolled: ${result.name} (${result.multiplier}x)`;
+            simResult.style.color = result.color;
+        }
+
+        // 5. LIVE MATH & VALIDATION
         function calculateMath() {
             let totalProb = 0;
             let rtp = 0;
 
             paytable.forEach(node => {
                 totalProb += node.prob;
-                // RTP formula: Sum of (Probability * Multiplier)
                 rtp += (node.prob / 100) * node.multiplier;
             });
 
-            // Format outputs
             const formattedProb = totalProb.toFixed(2);
             const rtpPercentage = (rtp * 100).toFixed(2);
+            const houseEdge = (100 - (rtp * 100)).toFixed(2);
 
             probDisplay.innerText = `${formattedProb}%`;
             rtpDisplay.innerText = `${rtpPercentage}%`;
+            edgeDisplay.innerText = `${houseEdge}%`;
 
-            // Validate constraints
             let isMathValid = false;
 
             if (formattedProb !== "100.00") {
                 probDisplay.style.color = "var(--error-red)";
-                rtpDisplay.style.color = "var(--text-muted)";
-                rtpStatus.className = "rtp-status status-error";
-                rtpStatus.innerText = "Error: Probability must equal exactly 100%";
+                mathStatus.className = "status-badge status-error";
+                mathStatus.innerText = "Error: Chance must equal exactly 100%";
+            } else if (rtpPercentage > 99.00) {
+                rtpDisplay.style.color = "var(--error-red)";
+                mathStatus.className = "status-badge status-error";
+                mathStatus.innerText = "Error: RTP is too high (Economy Drain)";
             } else {
-                probDisplay.style.color = "var(--accent-green)";
-                
-                // Determine RTP safety
-                if (rtpPercentage > 99.00) {
-                    rtpDisplay.style.color = "var(--error-red)";
-                    rtpStatus.className = "rtp-status status-error";
-                    rtpStatus.innerText = "Error: RTP cannot exceed 99.00% (House Deficit)";
-                } else if (rtpPercentage < 50.00) {
-                    rtpDisplay.style.color = "#ffaa00";
-                    rtpStatus.className = "rtp-status status-warn";
-                    rtpStatus.innerText = "Warning: Very Low RTP. Players may avoid.";
-                    isMathValid = true; // Technically allowed, but warned
-                } else {
-                    rtpDisplay.style.color = "var(--accent-green)";
-                    rtpStatus.className = "rtp-status status-safe";
-                    rtpStatus.innerText = "Protocol Verified: Mathematically Safe";
-                    isMathValid = true;
-                }
+                probDisplay.style.color = "var(--text-bright)";
+                rtpDisplay.style.color = "var(--text-bright)";
+                mathStatus.className = "status-badge status-safe";
+                mathStatus.innerText = "Math Verified & Safe";
+                isMathValid = true;
             }
 
-            // Enable/Disable Publish Button
             publishBtn.disabled = !isMathValid;
         }
 
-        // 4. PUBLISH TO BLOCKCHAIN/FIRESTORE
+        // 6. PUBLISH TO DATABASE
         publishBtn.addEventListener('click', async () => {
-            const title = document.getElementById('game-title').value.trim();
-            const emoji = document.getElementById('game-emoji').value.trim() || "🎮";
-            const type = document.getElementById('game-engine').value;
-
-            if (!title) return alert("Please provide a World Title.");
+            const title = document.getElementById('world-title').value.trim() || "Untitled World";
             if (!activeUser) return alert("Security Error: Not authenticated.");
 
             publishBtn.disabled = true;
-            publishBtn.innerText = "Compiling Logic...";
-            saveStatus.style.display = "inline";
+            publishBtn.innerText = "Saving...";
 
             try {
-                // Strip temporary UI IDs and clean data for database
                 const cleanPaytable = paytable.map(node => ({
-                    name: node.name,
-                    color: node.color,
-                    multiplier: node.multiplier,
-                    prob: node.prob
+                    name: node.name, color: node.color, multiplier: node.multiplier, prob: node.prob
                 }));
 
-                // Push custom game architecture to Firebase
                 await addDoc(collection(db, "games"), {
                     title: title,
-                    emoji: emoji,
-                    type: type,
+                    type: "rng", // Default template for this studio version
                     creator: activeUser.displayName || activeUser.email.split('@')[0],
                     creatorUid: activeUser.uid,
-                    paytable: cleanPaytable, // <--- The custom creator logic
+                    paytable: cleanPaytable,
                     createdAt: new Date()
                 });
 
-                saveStatus.innerText = "Successfully Deployed!";
-                saveStatus.style.color = "var(--accent-green)";
-                
-                setTimeout(() => {
-                    window.location.href = 'home.html';
-                }, 1500);
+                document.getElementById('save-status').style.display = "inline";
+                setTimeout(() => window.location.href = 'home.html', 1500);
 
             } catch (error) {
                 console.error("Publish Error:", error);
-                alert("Failed to deploy to protocol.");
+                alert("Failed to publish to lobby.");
                 publishBtn.disabled = false;
-                publishBtn.innerText = "Publish Protocol";
-                saveStatus.style.display = "none";
+                publishBtn.innerText = "Publish to Lobby";
             }
         });
 
-        // Initialize Call
+        // Start
         window.addEventListener('DOMContentLoaded', initializeStudio);
     </script>
 </body>
