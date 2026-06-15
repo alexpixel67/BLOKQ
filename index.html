@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PixelStake | UGC Arcade</title>
+    <title>BLOKQ | UGC Arcade Platform</title>
     <style>
         /* CSS RESET & VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -21,12 +21,12 @@
 
         /* SIDEBAR */
         aside { width: 250px; background-color: var(--bg-panel); padding: 20px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid #2a3b47; }
-        .logo { font-size: 24px; font-weight: 900; color: var(--text-main); letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
         .logo span { color: var(--accent-green); }
         .nav-menu { display: flex; flex-direction: column; gap: 10px; list-style: none; }
         .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; color: var(--text-muted); }
         .nav-menu li:hover, .nav-menu li.active { background: var(--bg-hover); color: var(--text-main); }
-        .btn-create { margin-top: auto; background: var(--text-main); color: var(--bg-dark); padding: 15px; border: none; border-radius: var(--border-radius); font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-create { margin-top: auto; background: var(--text-main); color: var(--bg-dark); padding: 15px; border: none; border-radius: var(--border-radius); font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-create:hover { background: var(--accent-green); }
 
         /* MAIN CONTENT */
@@ -77,25 +77,25 @@
 <body>
 
     <aside>
-        <div class="logo">🎲 Pixel<span>Stake</span></div>
+        <div class="logo">🟩 BLOK<span>Q</span></div>
         <ul class="nav-menu">
-            <li class="active">🎮 Lobby</li>
+            <li class="active">🎮 Discover Lobby</li>
             <li>🔥 Trending UGC</li>
             <li>✨ RNG Simulators</li>
-            <li>📈 Crash Mechanics</li>
-            <li>🏆 Leaderboard</li>
+            <li>📈 Custom Crash</li>
+            <li>🏆 Global Rankings</li>
         </ul>
-        <button class="btn-create">+ Studio (Create Game)</button>
+        <button class="btn-create">BLOKQ Studio</button>
     </aside>
 
     <main>
         <header>
             <div class="search-bar">
-                <input type="text" placeholder="Search for user games...">
+                <input type="text" placeholder="Search custom BLOKQ worlds...">
             </div>
             <div class="user-info">
                 <div class="balance">
-                    <span id="ac-balance">10,000</span> AC
+                    <span id="bq-balance">10,000</span> BQ
                 </div>
                 <div class="profile-pic">U</div>
             </div>
@@ -105,14 +105,14 @@
             <div class="hero">
                 <div class="hero-text">
                     <h1>Sols RNG: Reborn</h1>
-                    <p>The most popular user-created RNG simulator this week. Roll for a 1-in-1,000,000 aura!</p>
-                    <button class="btn-play-hero" onclick="openGame('Sols RNG: Reborn')">Play Now</button>
+                    <p>The most popular community-built RNG simulator this week. Roll for a 1-in-1,000,000 custom aura!</p>
+                    <button class="btn-play-hero" onclick="openGame('Sols RNG: Reborn')">Deploy World</button>
                 </div>
                 <div style="font-size: 100px;">🌌</div>
             </div>
 
             <div class="section-title">
-                <h3>🔥 Trending Community Games</h3>
+                <h3>🔥 Trending Creator Hubs</h3>
             </div>
             <div class="grid">
                 <div class="game-card" onclick="openGame('Neon Plinko')">
@@ -166,20 +166,20 @@
                 <button class="close-btn" onclick="closeGame()">×</button>
             </div>
             <div class="game-frame">
-                <h1 style="color: #2a3b47; font-size: 48px; text-transform: uppercase;">Game Screen</h1>
-                <p style="color: var(--text-muted); margin-top: 10px;">(User-generated content loads here)</p>
+                <h1 style="color: #2a3b47; font-size: 48px; text-transform: uppercase;">BLOKQ Instance</h1>
+                <p style="color: var(--text-muted); margin-top: 10px;">(UGC Canvas Syncing...)</p>
                 <div id="game-result" style="margin-top: 30px; font-size: 24px; font-weight: bold; color: var(--accent-green);"></div>
             </div>
             <div class="game-controls">
                 <input type="number" id="bet-amount" class="bet-input" value="100" min="10">
-                <button class="btn-bet" onclick="placeBet()">Play (Costs AC)</button>
+                <button class="btn-bet" onclick="placeBet()">Wager BQ</button>
             </div>
         </div>
     </div>
 
     <script>
         let balance = 10000;
-        const balanceDisplay = document.getElementById('ac-balance');
+        const balanceDisplay = document.getElementById('bq-balance');
         const modal = document.getElementById('gameModal');
         const modalTitle = document.getElementById('modal-title');
         const resultDisplay = document.getElementById('game-result');
@@ -201,18 +201,18 @@
             modal.style.display = 'none';
         }
 
-        // Simulate a "Bet" or "Roll" in the user game
+        // Simulate a "Bet" or "Roll" inside a BLOKQ user-created game
         function placeBet() {
             const betInput = document.getElementById('bet-amount').value;
             const bet = parseInt(betInput);
 
             if (isNaN(bet) || bet <= 0) {
-                alert("Please enter a valid amount of Arcade Coins.");
+                alert("Please enter a valid amount of BQ Tokens.");
                 return;
             }
 
             if (bet > balance) {
-                alert("Not enough Arcade Coins!");
+                alert("Insufficient BQ Balance!");
                 return;
             }
 
@@ -220,7 +220,7 @@
             balance -= bet;
             updateBalance(balance);
             resultDisplay.style.color = "white";
-            resultDisplay.innerText = "Rolling...";
+            resultDisplay.innerText = "Processing Logic...";
 
             // Simulate game outcome after 1 second
             setTimeout(() => {
@@ -230,10 +230,10 @@
                     const winnings = bet * 2;
                     balance += winnings;
                     resultDisplay.style.color = "var(--accent-green)";
-                    resultDisplay.innerText = `You won ${winnings} AC! 🎉`;
+                    resultDisplay.innerText = `Success! +${winnings} BQ minted 🎉`;
                 } else {
                     resultDisplay.style.color = "#ff4d4d";
-                    resultDisplay.innerText = `You lost ${bet} AC. Try again!`;
+                    resultDisplay.innerText = `Defeat. -${bet} BQ burned.`;
                 }
                 updateBalance(balance);
             }, 1000);
