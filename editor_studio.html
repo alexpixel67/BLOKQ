@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ Studio | Visual Game Creator</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --accent: #3b82f6;
+            --accent-glow: #60a5fa;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --node-header: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+        
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar - Asset & Node Library */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+        }
+
+        .brand {
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            border-bottom: 1px solid #334155;
+            letter-spacing: -0.5px;
+        }
+
+        .library-section {
+            padding: 15px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .library-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .node-template {
+            background: var(--node-header);
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: grab;
+            border: 1px solid #475569;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .node-template:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .node-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            background-image: 
+                radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+
+        .canvas-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-glow);
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: var(--node-header);
+            color: var(--text-main);
+            border: 1px solid #475569;
+        }
+
+        /* Nodes on Canvas */
+        .node-instance {
+            position: absolute;
+            width: 220px;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            border: 1px solid #475569;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+        }
+
+        .node-instance.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent), 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .node-header {
+            padding: 10px 15px;
+            background: var(--node-header);
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .node-body {
+            padding: 15px;
+        }
+
+        .node-input {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 1px solid #334155;
+            color: var(--text-main);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+        }
+
+        .node-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .port {
+            width: 12px;
+            height: 12px;
+            background: #64748b;
+            border-radius: 50%;
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: crosshair;
+            border: 2px solid var(--bg-panel);
+        }
+
+        .port.output {
+            left: auto;
+            right: -6px;
+            background: var(--accent);
+        }
+
+        .port:hover {
+            transform: translateY(-50%) scale(1.3);
+            background: white;
+        }
+
+        /* Connection SVG Layer */
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        path.connection-line {
+            fill: none;
+            stroke: #64748b;
+            stroke-width: 3px;
+            stroke-linecap: round;
+            transition: stroke 0.2s;
+        }
+
+        path.connection-line.active {
+            stroke: var(--success);
+            stroke-dasharray: 10;
+            animation: dash 1s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -20; }
+        }
+
+        /* Properties Panel (Right) */
+        .properties-panel {
+            width: 300px;
+            background: var(--bg-panel);
+            border-left: 1px solid #334155;
+            padding: 20px;
+            z-index: 10;
+            display: none; /* Hidden by default */
+        }
+        
+        .properties-panel.active {
+            display: block;
+        }
+
+        .prop-group {
+            margin-bottom: 20px;
+        }
+
+        .prop-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .security-badge {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar: Node Library -->
+    <div class="sidebar">
+        <div class="brand">BLOKQ STUDIO</div>
+        
+        <div class="library-section">
+            <div class="library-title">Logic Flow</div>
+            <div class="node-template" draggable="true" data-type="start">
+                <div class="node-icon" style="background: var(--success);">▶</div>
+                <span>Game Start</span>
+            </div>
+            <div class="node-template" draggable="true" data-type="end">
+                <div class="node-icon" style="background: var(--danger);">■</div>
+                <span>Payout / End</span>
+            </div>
+        </div>
+
+        <div class="library-section">
+            <div class="library-title">Probability & Risk</div>
+            <div class="node-template" draggable="true" data-type="random">
+                <div class="node-icon" style="background: var(--warning);">?</div>
+                <span>Random Chance</span>
+            </div>
+            <div class="node-template" draggable="true" data-type="multiplier">
+                <div class="node-icon" style="background: var(--accent);">×</div>
+                <span>Multiplier Step</span>
+            </div>
+            <div class="node-template" draggable="true" data-type="timer">
+                <div class="node-icon" style="background: #8b5cf6;">⏱</div>
+                <span>Delay / Timer</span>
+            </div>
+        </div>
+
+        <div class="library-section">
+            <div class="library-title">Visuals</div>
+            <div class="node-template" draggable="true" data-type="effect">
+                <div class="node-icon" style="background: #ec4899;">✨</div>
+                <span>Particle Effect</span>
+            </div>
+            <div class="node-template" draggable="true" data-type="sound">
+                <div class="node-icon" style="background: #14b8a6;">🔊</div>
+                <span>Play Sound</span>
+            </div>
+        </div>
+
+        <div style="margin-top: auto; padding: 20px;">
+            <div class="security-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Provably Fair Logic
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;">
+                All random nodes are executed server-side via Cloudflare Functions to prevent client-side rigging.
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Canvas -->
+    <div class="canvas-area" id="canvas">
+        <svg class="connections" id="svg-layer"></svg>
+        
+        <div class="canvas-controls">
+            <button class="btn btn-secondary" onclick="clearCanvas()">Clear</button>
+            <button class="btn btn-primary" onclick="deployGame()">Deploy Game</button>
+        </div>
+
+        <!-- Example Node (Will be generated dynamically usually, but placed here for demo) -->
+        <div class="node-instance" id="node-1" style="top: 100px; left: 100px;" data-id="1" data-type="start">
+            <div class="port output" data-port="out"></div>
+            <div class="node-header">Game Start</div>
+            <div class="node-body">
+                <label class="prop-label">Initial Bet</label>
+                <input type="number" class="node-input" value="10">
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="properties-panel" id="prop-panel">
+        <h3 style="margin-top: 0;">Properties</h3>
+        <div id="prop-content">
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Select a node to edit its properties.</p>
+        </div>
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #334155;">
+            <label class="prop-label">Security Settings</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <input type="checkbox" checked disabled> 
+                <span style="font-size: 0.85rem;">Server-Side Verification</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" checked disabled> 
+                <span style="font-size: 0.85rem;">Anti-Tamper Hash</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let nodes = [];
+        let connections = [];
+        let selectedNode = null;
+        let draggedNode = null;
+        let dragOffset = { x: 0, y: 0 };
+        let nodeIdCounter = 2;
+
+        const canvas = document.getElementById('canvas');
+        const svgLayer = document.getElementById('svg-layer');
+        const propPanel = document.getElementById('prop-panel');
+        const propContent = document.getElementById('prop-content');
+
+        // Dragging Logic for Sidebar Templates
+        document.querySelectorAll('.node-template').forEach(template => {
+            template.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', template.dataset.type);
+                e.dataTransfer.setData('name', template.querySelector('span').innerText);
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => e.preventDefault());
+        
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const name = e.dataTransfer.getData('name');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            createNode(type, name, x, y);
+        });
+
+        // Create Node Instance
+        function createNode(type, name, x, y) {
+            const id = `node-${nodeIdCounter++}`;
+            const nodeEl = document.createElement('div');
+            nodeEl.className = 'node-instance';
+            nodeEl.id = id;
+            nodeEl.style.left = `${x}px`;
+            nodeEl.style.top = `${y}px`;
+            nodeEl.dataset.type = type;
+            nodeEl.dataset.id = id;
+
+            // Build Content based on Type
+            let inputs = '';
+            if(type === 'random') {
+                inputs = `
+                    <label class="prop-label">Chance % (Server Verified)</label>
+                    <input type="range" min="1" max="99" value="50" class="node-input" oninput="this.nextElementSibling.value = this.value + '%'">
+                    <output style="float:right; font-size:0.8rem; color:var(--accent)">50%</output>
+                    <div style="clear:both"></div>
+                `;
+            } else if (type === 'multiplier') {
+                inputs = `
+                    <label class="prop-label">Multiplier Value</label>
+                    <input type="number" step="0.1" value="2.0" class="node-input">
+                `;
+            } else if (type === 'timer') {
+                inputs = `
+                    <label class="prop-label">Duration (ms)</label>
+                    <input type="number" value="1000" class="node-input">
+                `;
+            }
+
+            nodeEl.innerHTML = `
+                ${type !== 'start' ? '<div class="port" data-port="in"></div>' : ''}
+                <div class="node-header">${name} <span style="font-size:10px; opacity:0.5">#${id.split('-')[1]}</span></div>
+                <div class="node-body">
+                    ${inputs}
+                </div>
+                ${type !== 'end' ? '<div class="port output" data-port="out"></div>' : ''}
+            `;
+
+            // Node Interaction Events
+            const header = nodeEl.querySelector('.node-header');
+            header.addEventListener('mousedown', (e) => startDragNode(e, nodeEl));
+            nodeEl.addEventListener('click', (e) => selectNode(nodeEl, e));
+
+            // Port Connection Events
+            document.querySelectorAll(`#${id} .port`).forEach(port => {
+                port.addEventListener('mousedown', (e) => startConnection(e, port, id));
+            });
+
+            canvas.appendChild(nodeEl);
+            nodes.push({ id, type, x, y, el: nodeEl });
+            selectNode(nodeEl);
+        }
+
+        // Dragging Nodes on Canvas
+        function startDragNode(e, nodeEl) {
+            if(e.target.closest('.port')) return; // Don't drag if clicking port
+            draggedNode = nodeEl;
+            const rect = nodeEl.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            document.addEventListener('mousemove', onDragNode);
+            document.addEventListener('mouseup', stopDragNode);
+        }
+
+        function onDragNode(e) {
+            if (!draggedNode) return;
+            const canvasRect = canvas.getBoundingClientRect();
+            let x = e.clientX - canvasRect.left - dragOffset.x;
+            let y = e.clientY - canvasRect.top - dragOffset.y;
+            
+            draggedNode.style.left = `${x}px`;
+            draggedNode.style.top = `${y}px`;
+            
+            updateConnections();
+        }
+
+        function stopDragNode() {
+            draggedNode = null;
+            document.removeEventListener('mousemove', onDragNode);
+            document.removeEventListener('mouseup', stopDragNode);
+        }
+
+        // Selection & Properties
+        function selectNode(nodeEl, e) {
+            if(e && e.target.classList.contains('port')) return;
+            
+            document.querySelectorAll('.node-instance').forEach(n => n.classList.remove('selected'));
+            nodeEl.classList.add('selected');
+            selectedNode = nodeEl;
+            
+            propPanel.classList.add('active');
+            
+            // Generate dynamic properties
+            const type = nodeEl.dataset.type;
+            let html = `<h4>${nodeEl.querySelector('.node-header').childNodes[0].textContent}</h4>`;
+            html += `<p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px">ID: ${nodeEl.dataset.id}</p>`;
+            
+            if(type === 'random') {
+                html += `<p style="font-size:0.85rem; line-height:1.5">This node requests a cryptographically secure random number from the server. The result cannot be predicted or manipulated by the client.</p>`;
+            } else if (type === 'end') {
+                html += `<p style="font-size:0.85rem; line-height:1.5">Finalizes the game state and triggers the smart contract payout based on the accumulated multiplier.</p>`;
+            }
+
+            propContent.innerHTML = html;
+        }
+
+        // Connection Logic (Simple Visualization)
+        let tempLine = null;
+        let connectionStart = null;
+
+        function startConnection(e, port, nodeId) {
+            e.stopPropagation();
+            connectionStart = { port, nodeId };
+            
+            const rect = port.getBoundingClientRect();
+            const canvasRect = canvas.getBoundingClientRect();
+            const startX = rect.left - canvasRect.left + 6;
+            const startY = rect.top - canvasRect.top + 6;
+
+            tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tempLine.setAttribute('class', 'connection-line');
+            tempLine.setAttribute('d', `M ${startX} ${startY} L ${startX} ${startY}`);
+            svgLayer.appendChild(tempLine);
+
+            document.addEventListener('mousemove', onDrawConnection);
+            document.addEventListener('mouseup', endConnection);
+        }
+
+        function onDrawConnection(e) {
+            if(!tempLine) return;
+            const canvasRect = canvas.getBoundingClientRect();
+            const startX = parseFloat(tempLine.getAttribute('d').split(' ')[1]);
+            const startY = parseFloat(tempLine.getAttribute('d').split(' ')[3]);
+            const endX = e.clientX - canvasRect.left;
+            const endY = e.clientY - canvasRect.top;
+
+            // Bezier Curve
+            const cp1x = startX + Math.abs(endX - startX) * 0.5;
+            const cp1y = startY;
+            const cp2x = endX - Math.abs(endX - startX) * 0.5;
+            const cp2y = endY;
+
+            const d = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
+            tempLine.setAttribute('d', d);
+        }
+
+        function endConnection(e) {
+            document.removeEventListener('mousemove', onDrawConnection);
+            document.removeEventListener('mouseup', endConnection);
+            
+            const target = e.target;
+            if(target.classList.contains('port') && target !== connectionStart.port) {
+                // Validate connection (Out to In)
+                const startType = connectionStart.port.classList.contains('output') ? 'out' : 'in';
+                const endType = target.classList.contains('output') ? 'out' : 'in';
+                
+                if(startType !== endType) {
+                    // Create permanent connection
+                    connections.push({
+                        from: connectionStart.nodeId,
+                        fromPort: connectionStart.port.dataset.port,
+                        to: target.parentElement.id,
+                        toPort: target.dataset.port,
+                        el: tempLine
+                    });
+                    tempLine.classList.add('active');
+                    tempLine = null;
+                    updateConnections();
+                } else {
+                    tempLine.remove();
+                    tempLine = null;
+                }
+            } else {
+                if(tempLine) tempLine.remove();
+                tempLine = null;
+            }
+            connectionStart = null;
+        }
+
+        function updateConnections() {
+            const canvasRect = canvas.getBoundingClientRect();
+            
+            connections.forEach(conn => {
+                const fromNode = document.getElementById(conn.from);
+                const toNode = document.getElementById(conn.to);
+                if(!fromNode || !toNode) return;
+
+                const fromPort = fromNode.querySelector(`.port.${conn.fromPort === 'out' ? 'output' : ''}:not(.output)`); // Simplified selector
+                const toPort = toNode.querySelector(`.port.${conn.toPort === 'out' ? 'output' : ''}:not(.output)`);
+                
+                // Get actual ports again properly
+                const p1 = fromNode.querySelector(`.port[data-port="${conn.fromPort}"]`);
+                const p2 = toNode.querySelector(`.port[data-port="${conn.toPort}"]`);
+
+                const r1 = p1.getBoundingClientRect();
+                const r2 = p2.getBoundingClientRect();
+
+                const x1 = r1.left - canvasRect.left + 6;
+                const y1 = r1.top - canvasRect.top + 6;
+                const x2 = r2.left - canvasRect.left + 6;
+                const y2 = r2.top - canvasRect.top + 6;
+
+                const cp1x = x1 + Math.abs(x2 - x1) * 0.5;
+                const cp1y = y1;
+                const cp2x = x2 - Math.abs(x2 - x1) * 0.5;
+                const cp2y = y2;
+
+                conn.el.setAttribute('d', `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`);
+            });
+        }
+
+        function clearCanvas() {
+            if(confirm("Clear entire game blueprint?")) {
+                document.querySelectorAll('.node-instance').forEach(n => n.remove());
+                document.querySelectorAll('.connection-line').forEach(l => l.remove());
+                nodes = [];
+                connections = [];
+                nodeIdCounter = 1;
+                propPanel.classList.remove('active');
+            }
+        }
+
+        function deployGame() {
+            if(nodes.length < 2) {
+                alert("Your game needs at least a Start and an End node!");
+                return;
+            }
+            
+            // Construct the JSON blueprint
+            const blueprint = {
+                name: "Custom Game",
+                version: "1.0",
+                nodes: nodes.map(n => ({
+                    id: n.id,
+                    type: n.type,
+                    config: {} // Extract input values here in real app
+                })),
+                connections: connections.map(c => ({
+                    from: c.from,
+                    to: c.to
+                }))
+            };
+
+            console.log("Deploying Blueprint:", blueprint);
+            alert("Game Blueprint Generated! \n\nIn the full version, this JSON is sent to the Cloudflare Function which compiles it into a secure, server-side executable game loop.");
+        }
+
+        // Initialize with one node
+        // createNode('start', 'Game Start', 100, 100);
+    </script>
+</body>
+</html>
