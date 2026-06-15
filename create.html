@@ -3,472 +3,478 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ Studio | Node Graph Engine</title>
+    <title>BLOKQ Studio | Casino Builder</title>
     <style>
         /* CSS RESET & IDE VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
-            --ide-bg: #1e1e1e;
-            --ide-panel: #252526;
-            --ide-header: #333333;
-            --ide-border: #3e3e42;
-            --ide-highlight: #094771;
-            --accent-green: #00e701;
-            --accent-blue: #007acc;
-            --text-main: #cccccc;
+            --ide-bg: #0b1016;
+            --ide-panel: #131a22;
+            --ide-border: #222f3e;
+            --ide-highlight: #00e701;
+            --text-main: #a9b6c2;
             --text-bright: #ffffff;
-            --error-red: #f48771;
-            --warn-yellow: #cca700;
+            --error-red: #ff4d4d;
         }
 
         body { background-color: var(--ide-bg); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
         /* TOP TOOLBAR */
-        .top-bar { background-color: var(--ide-header); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ide-border); font-size: 13px; z-index: 10; }
-        .top-bar-left { display: flex; align-items: center; gap: 20px; }
-        .brand { font-weight: 900; color: var(--text-bright); letter-spacing: 1px; }
-        .brand span { color: var(--accent-green); }
-        .toolbar { display: flex; gap: 10px; }
-        .btn-tool { background: #3a3d41; border: 1px solid var(--ide-border); color: var(--text-bright); padding: 5px 15px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; }
-        .btn-tool:hover { background: #4a4d51; }
-        .btn-primary { background: var(--accent-green); color: #000; border: none; font-weight: bold; }
+        .top-bar { background-color: #070a0f; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ide-border); z-index: 10; }
+        .brand { font-weight: 900; color: var(--text-bright); letter-spacing: 1px; font-size: 18px; }
+        .brand span { color: var(--ide-highlight); }
+        .toolbar { display: flex; gap: 10px; align-items: center; }
+        .world-name-input { background: transparent; border: none; border-bottom: 1px dashed var(--ide-border); color: white; font-weight: bold; font-size: 16px; outline: none; text-align: right; margin-right: 20px; width: 250px; padding-bottom: 5px; }
+        .world-name-input:focus { border-bottom-color: var(--ide-highlight); }
+        .btn { background: #1f2b38; border: 1px solid var(--ide-border); color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #2c3e50; }
+        .btn-primary { background: var(--ide-highlight); color: #000; border: none; }
         .btn-primary:hover { background: #00c401; }
-        .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .btn-primary:disabled { background: #1f2b38; color: #555; cursor: not-allowed; }
 
         /* STUDIO LAYOUT */
-        .studio-layout { display: flex; flex: 1; overflow: hidden; }
+        .layout { display: flex; flex: 1; overflow: hidden; }
 
-        /* LEFT: SCENE HIERARCHY */
-        .hierarchy { width: 260px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; }
-        .panel-title { font-size: 11px; text-transform: uppercase; font-weight: bold; padding: 12px 15px; background: #2d2d30; color: #aaa; letter-spacing: 1px; border-bottom: 1px solid var(--ide-border); display: flex; justify-content: space-between; align-items: center; }
-        .scene-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-        .scene-item { padding: 10px; background: var(--ide-bg); border: 1px solid var(--ide-border); border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-left: 3px solid transparent; }
-        .scene-item:hover { background: #2a2d2f; }
-        .scene-item.active { background: #2c313a; border-left-color: var(--accent-blue); color: var(--text-bright); }
-        .scene-item.root { border-left-color: var(--accent-green); }
-        .btn-add-scene { background: transparent; border: 1px dashed var(--ide-border); color: #888; padding: 10px; text-align: center; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 10px; }
-        .btn-add-scene:hover { border-color: var(--text-bright); color: var(--text-bright); }
+        /* LEFT: ENGINE SELECTOR */
+        .sidebar { width: 260px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; }
+        .panel-header { padding: 15px; font-size: 11px; text-transform: uppercase; font-weight: 900; color: #667; letter-spacing: 1px; border-bottom: 1px solid var(--ide-border); background: #0b1016; }
+        .engine-list { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .engine-card { padding: 15px; background: var(--ide-bg); border: 2px solid transparent; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .engine-card:hover { background: #18232f; }
+        .engine-card.active { border-color: var(--ide-highlight); background: rgba(0, 231, 1, 0.05); }
+        .engine-icon { font-size: 24px; }
+        .engine-details h4 { color: white; font-size: 14px; margin-bottom: 3px; }
+        .engine-details p { font-size: 11px; color: #888; }
 
-        /* CENTER: WORKSPACE */
-        .workspace { flex: 1; display: flex; flex-direction: column; background-color: #111; position: relative; }
+        /* CENTER: LIVE VIEWPORT */
+        .viewport { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, #131a22 0%, #0b1016 100%); }
+        .viewport-header { position: absolute; top: 20px; left: 20px; z-index: 5; }
+        .badge { background: rgba(0,0,0,0.5); border: 1px solid var(--ide-border); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; backdrop-filter: blur(5px); }
         
-        /* Playtest Visualizer */
-        .visualizer { flex: 1; background: radial-gradient(circle at center, #1e1e1e 0%, #000 100%); display: flex; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; border-bottom: 1px solid var(--ide-border); }
-        .journey-log { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 15px; }
-        .log-entry { background: rgba(255,255,255,0.05); border-left: 3px solid var(--ide-highlight); padding: 15px; border-radius: 6px; animation: slideIn 0.3s ease-out; }
-        .log-scene { font-size: 12px; color: var(--accent-blue); text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-        .log-action { font-size: 16px; color: var(--text-bright); }
-        .log-terminal { border-left-color: var(--accent-green); background: rgba(0, 231, 1, 0.05); }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        canvas { max-width: 100%; max-height: 100%; }
 
-        /* Active Scene Editor */
-        .editor-drawer { height: 350px; background-color: var(--ide-panel); display: flex; flex-direction: column; }
-        .editor-header { padding: 15px; background: #2d2d30; border-bottom: 1px solid var(--ide-border); display: flex; align-items: center; gap: 15px; }
-        .scene-name-input { background: transparent; border: none; border-bottom: 1px solid var(--ide-border); color: var(--text-bright); font-size: 18px; font-weight: bold; outline: none; width: 300px; padding-bottom: 5px; }
-        .scene-name-input:focus { border-bottom-color: var(--accent-blue); }
+        /* MINES GRID PREVIEW */
+        .mines-grid { display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 20px; background: #0f151c; border-radius: 12px; border: 1px solid var(--ide-border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .mine-tile { width: 60px; height: 60px; background: #1f2b38; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2); transition: 0.1s; }
+        .mine-tile:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2); }
+
+        /* RIGHT: GAME CONFIGURATOR */
+        .configurator { width: 340px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; overflow-y: auto; }
         
-        .editor-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .node-table { width: 100%; border-collapse: collapse; }
-        .node-table th { text-align: left; padding: 8px; font-size: 11px; color: #888; border-bottom: 1px solid var(--ide-border); text-transform: uppercase; }
-        .node-row { background: var(--ide-bg); border-bottom: 1px solid var(--ide-border); }
-        .node-row td { padding: 8px; }
+        .config-section { padding: 20px; border-bottom: 1px solid var(--ide-border); }
+        .config-title { font-size: 12px; font-weight: bold; color: white; margin-bottom: 15px; text-transform: uppercase; }
         
-        .ide-input, .ide-select { background: var(--ide-panel); border: 1px solid var(--ide-border); color: var(--text-bright); padding: 8px; border-radius: 4px; outline: none; font-size: 13px; width: 100%; }
-        .ide-input:focus, .ide-select:focus { border-color: var(--accent-blue); }
-        .number { text-align: right; }
+        /* Dynamic Wheel Table */
+        .slice-list { display: flex; flex-direction: column; gap: 8px; }
+        .slice-row { display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 8px; align-items: center; background: var(--ide-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--ide-border); }
+        .ide-input { width: 100%; background: #0b1016; border: 1px solid var(--ide-border); color: white; padding: 8px; border-radius: 4px; outline: none; font-size: 13px; text-align: center; }
+        .ide-input:focus { border-color: var(--ide-highlight); }
+        .btn-del { background: transparent; color: var(--error-red); border: none; cursor: pointer; font-size: 16px; opacity: 0.7; }
+        .btn-del:hover { opacity: 1; }
         
-        /* RIGHT: MATH INSPECTOR */
-        .inspector { width: 300px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; }
-        .math-group { padding: 20px; border-bottom: 1px solid var(--ide-border); }
-        .math-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; }
-        .math-val { font-family: monospace; font-size: 16px; font-weight: bold; color: var(--text-bright); }
+        .btn-add { width: 100%; background: transparent; border: 1px dashed var(--ide-border); color: #888; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-top: 10px; }
+        .btn-add:hover { border-color: white; color: white; }
+
+        /* MATH & RTP LOCK */
+        .math-box { background: #0b1016; padding: 15px; border-radius: 8px; border: 1px solid var(--ide-border); }
+        .math-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
+        .math-val { font-family: monospace; font-size: 16px; font-weight: bold; color: white; }
         
-        .status-badge { padding: 8px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; line-height: 1.4; }
-        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 231, 1, 0.2); }
-        .status-error { background: rgba(244, 135, 113, 0.1); color: var(--error-red); border: 1px solid rgba(244, 135, 113, 0.2); }
-        .error-log { margin-top: 15px; font-size: 12px; color: var(--error-red); background: rgba(244, 135, 113, 0.05); padding: 10px; border-radius: 4px; display: none; }
+        .status-badge { display: block; width: 100%; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; }
+        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); border: 1px solid rgba(0, 231, 1, 0.2); }
+        .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error-red); border: 1px solid rgba(255, 77, 77, 0.2); }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div class="top-bar-left">
-            <div class="brand">🟩 BLOK<span>Q</span> Studio</div>
-        </div>
+        <div class="brand">🟩 BLOK<span>Q</span> Studio</div>
         <div class="toolbar">
-            <input type="text" id="world-title" value="My Dungeon Crawler" style="background:transparent; border:none; color:white; font-weight:bold; outline:none; text-align:right; margin-right: 20px; font-size:14px;">
-            <button class="btn-tool" onclick="window.location.href='home.html'">Exit to Lobby</button>
-            <button class="btn-tool btn-primary" id="publish-btn">Publish Graph</button>
+            <input type="text" id="world-title" class="world-title-input" value="My Stake Wheel" placeholder="Name your game...">
+            <button class="btn" onclick="window.location.href='home.html'">Exit</button>
+            <button class="btn btn-primary" id="publish-btn">Deploy to Blockchain</button>
         </div>
     </div>
 
-    <div class="studio-layout">
-        
-        <!-- LEFT: SCENE HIERARCHY -->
-        <div class="hierarchy">
-            <div class="panel-title">
-                Scene Graph
-            </div>
-            <div style="font-size: 11px; padding: 10px 15px; color: #888; border-bottom: 1px solid var(--ide-border);">
-                The Entry Scene is the start of the player's journey. Link scenes together to build deep probability trees.
-            </div>
-            <div class="scene-list" id="scene-list">
-                <!-- Scenes Injected Here -->
-            </div>
-            <button class="btn-add-scene" id="add-scene-btn">+ Add New Scene</button>
-        </div>
-
-        <!-- CENTER: VISUALIZER & EDITOR -->
-        <div class="workspace">
-            
-            <!-- Playtest Terminal -->
-            <div class="visualizer" id="visualizer">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <button class="btn-tool" style="background: var(--accent-blue); border:none; padding: 10px 30px; font-size: 14px; font-weight:bold; color:white;" onclick="runSimulation()">▶ Run Journey Simulation</button>
-                    <div style="font-size: 11px; color:#888; margin-top:10px;">Simulates a player walking your probability graph.</div>
+    <div class="layout">
+        <!-- 1. ENGINE SELECTOR -->
+        <div class="sidebar">
+            <div class="panel-header">Select Engine</div>
+            <div class="engine-list">
+                <div class="engine-card active" onclick="switchEngine('wheel')">
+                    <div class="engine-icon">🎡</div>
+                    <div class="engine-details">
+                        <h4>Custom Wheel</h4>
+                        <p>Visual roulette mechanic</p>
+                    </div>
                 </div>
-                <div class="journey-log" id="journey-log">
-                    <!-- Logs Injected -->
+                <div class="engine-card" onclick="switchEngine('mines')">
+                    <div class="engine-icon">💣</div>
+                    <div class="engine-details">
+                        <h4>Grid Mines</h4>
+                        <p>Classic risk/reward grid</p>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Active Scene Editor -->
-            <div class="editor-drawer">
-                <div class="editor-header">
-                    <span style="font-size: 20px;">🎬</span>
-                    <input type="text" class="scene-name-input" id="active-scene-name" placeholder="Scene Name...">
-                    <span style="font-size: 11px; color: #888;" id="active-scene-id">ID: root</span>
-                </div>
-                <div class="editor-content">
-                    <table class="node-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 30%;">Outcome Name</th>
-                                <th style="width: 15%;">Chance (%)</th>
-                                <th style="width: 25%;">Action Type</th>
-                                <th style="width: 25%;">Value / Destination</th>
-                                <th style="width: 5%;"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="outcome-list">
-                            <!-- Outcomes Injected -->
-                        </tbody>
-                    </table>
-                    <button class="btn-add-scene" id="add-outcome-btn" style="border-style: dashed; margin-top:15px;">+ Add Outcome Branch</button>
+                <div class="engine-card" style="opacity: 0.4; cursor: not-allowed;">
+                    <div class="engine-icon">📈</div>
+                    <div class="engine-details">
+                        <h4>Crash Module</h4>
+                        <p>Locked - Requires Pro</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT: RECURSIVE MATH INSPECTOR -->
-        <div class="inspector">
-            <div class="panel-title">Recursive Math Engine</div>
+        <!-- 2. LIVE VIEWPORT -->
+        <div class="viewport">
+            <div class="viewport-header">
+                <div class="badge" id="preview-badge">Live Preview: Wheel Engine</div>
+            </div>
             
-            <div class="math-group">
-                <div class="math-stat">
-                    <span>Global RTP:</span>
-                    <span class="math-val" id="rtp-display">Calculating...</span>
-                </div>
-                <div class="math-stat">
-                    <span>House Edge:</span>
-                    <span class="math-val" id="edge-display" style="color: var(--accent-green);">--</span>
-                </div>
+            <div class="canvas-container" id="canvas-container">
+                <!-- Wheel Canvas -->
+                <canvas id="wheel-canvas" width="500" height="500"></canvas>
                 
-                <div class="status-badge status-error" id="math-status">
-                    Validating...
+                <!-- Mines Grid (Hidden by default) -->
+                <div class="mines-grid" id="mines-grid">
+                    <!-- JS Injects 25 tiles here -->
                 </div>
-                <div class="error-log" id="error-log"></div>
+            </div>
+            
+            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                <button class="btn" id="test-spin-btn" style="background: var(--ide-panel); font-size: 15px; padding: 12px 30px; border-radius: 30px;">▶ Test Animation</button>
+            </div>
+        </div>
+
+        <!-- 3. CONFIGURATOR (MATH & DESIGN) -->
+        <div class="configurator">
+            
+            <!-- WHEEL SETTINGS -->
+            <div id="config-wheel" style="display: block;">
+                <div class="config-section">
+                    <div class="config-title">Wheel Segments</div>
+                    <div style="display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 8px; margin-bottom: 5px; font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold; padding: 0 5px;">
+                        <span>Color</span><span>Payout (x)</span><span>Chance (%)</span><span></span>
+                    </div>
+                    <div class="slice-list" id="slice-list">
+                        <!-- Slices Injected -->
+                    </div>
+                    <button class="btn-add" id="add-slice-btn">+ Add Wheel Segment</button>
+                    <button class="btn" style="width:100%; margin-top:10px; font-size:11px;" onclick="autoBalanceWheel()">⚖️ Auto-Balance Chances</button>
+                </div>
             </div>
 
-            <div class="math-group" style="border-bottom: none;">
-                <div style="font-size: 11px; color: #aaa; line-height: 1.6;">
-                    <strong>Security Engine:</strong><br><br>
-                    The compiler recursively traces every possible path a player can take through your scenes.<br><br>
-                    If the total Expected Value (Global RTP) across all branches exceeds 99%, or if a circular infinite loop is detected, publishing will be cryptographically locked.
+            <!-- MINES SETTINGS -->
+            <div id="config-mines" style="display: none;">
+                <div class="config-section">
+                    <div class="config-title">Mines Configuration</div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">Visual Theme (Safe / Mine)</label>
+                        <select class="ide-input" id="mines-theme" onchange="renderMinesPreview()">
+                            <option value="💎,💣">💎 Gems / 💣 Bombs</option>
+                            <option value="💰,💀">💰 Coins / 💀 Skulls</option>
+                            <option value="🌟,👽">🌟 Stars / 👽 Aliens</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 12px; color: #888; display: block; margin-bottom: 5px;">House Edge Lock (%)</label>
+                        <input type="number" class="ide-input" id="mines-edge" value="4.0" step="0.5" min="1" max="10" onchange="calculateMinesMath()">
+                        <p style="font-size: 11px; color: #667; margin-top: 5px;">Controls the multiplier curve natively based on grid mathematics.</p>
+                    </div>
                 </div>
             </div>
+
+            <!-- RTP SECURITY INSPECTOR -->
+            <div class="config-section" style="border-top: 1px solid var(--ide-border); background: #070a0f;">
+                <div class="config-title">Mathematical Security</div>
+                <div class="math-box">
+                    <div class="math-row">
+                        <span>Expected RTP:</span>
+                        <span class="math-val" id="rtp-display">0.00%</span>
+                    </div>
+                    <div class="math-row">
+                        <span>Creator Edge:</span>
+                        <span class="math-val" id="edge-display" style="color: var(--ide-highlight);">0.00%</span>
+                    </div>
+                    <div class="status-badge status-safe" id="math-status">Verified Safe</div>
+                </div>
+            </div>
+
         </div>
     </div>
 
+    <!-- SCRIPT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ==========================================
-        // 1. STATE MANAGEMENT (The Scene Graph)
+        // 1. GLOBAL STATE & UI BINDING
         // ==========================================
         let auth = null;
         let db = null;
         let activeUser = null;
+        
+        let currentEngine = 'wheel'; // 'wheel' or 'mines'
 
-        let activeSceneId = "root";
-        let sceneIdCounter = 1;
-        let outcomeIdCounter = 100;
+        // Wheel State
+        let wheelSlices = [
+            { id: 1, color: "#2c3e50", multiplier: 0.0, prob: 48.0 },
+            { id: 2, color: "#3498db", multiplier: 1.5, prob: 30.0 },
+            { id: 3, color: "#9b59b6", multiplier: 2.0, prob: 15.0 },
+            { id: 4, color: "#e74c3c", multiplier: 5.0, prob: 5.0 },
+            { id: 5, color: "#f1c40f", multiplier: 20.0, prob: 2.0 }
+        ];
+        let sliceIdCounter = 6;
 
-        let graph = {
-            "root": {
-                name: "Entrance Door",
-                outcomes: [
-                    { id: 1, name: "Trap Triggered", prob: 50.0, type: "terminal", value: 0 },
-                    { id: 2, name: "Find Secret Stairs", prob: 50.0, type: "link", value: "scene_1" }
-                ]
-            },
-            "scene_1": {
-                name: "The Treasure Vault",
-                outcomes: [
-                    { id: 3, name: "Empty Chest", prob: 80.0, type: "terminal", value: 0.5 },
-                    { id: 4, name: "Gold Stash", prob: 20.0, type: "terminal", value: 4.5 }
-                ]
-            }
-        };
-
-        // DOM Elements
-        const sceneListEl = document.getElementById('scene-list');
-        const outcomeListEl = document.getElementById('outcome-list');
-        const activeSceneNameEl = document.getElementById('active-scene-name');
-        const activeSceneIdEl = document.getElementById('active-scene-id');
+        // UI Elements
+        const canvas = document.getElementById('wheel-canvas');
+        const ctx = canvas.getContext('2d');
+        const minesGrid = document.getElementById('mines-grid');
+        const sliceListEl = document.getElementById('slice-list');
         const rtpDisplay = document.getElementById('rtp-display');
         const edgeDisplay = document.getElementById('edge-display');
         const mathStatus = document.getElementById('math-status');
-        const errorLog = document.getElementById('error-log');
         const publishBtn = document.getElementById('publish-btn');
-        const journeyLog = document.getElementById('journey-log');
+        const testSpinBtn = document.getElementById('test-spin-btn');
 
         // ==========================================
-        // 2. UI RENDERING
+        // 2. ENGINE SWITCHER
         // ==========================================
-        function renderUI() {
-            renderSceneList();
-            renderActiveScene();
-            calculateGlobalMath();
-        }
+        window.switchEngine = function(engine) {
+            currentEngine = engine;
+            
+            // Update Sidebar UI
+            document.querySelectorAll('.engine-card').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
 
-        function renderSceneList() {
-            sceneListEl.innerHTML = "";
-            for (const [id, scene] of Object.entries(graph)) {
-                const item = document.createElement('div');
-                item.className = `scene-item ${id === activeSceneId ? 'active' : ''} ${id === 'root' ? 'root' : ''}`;
-                item.innerHTML = `
-                    <span>${id === 'root' ? '🟢' : '📄'} ${scene.name}</span>
-                    ${id !== 'root' ? `<span style="color:#888; font-size:16px;" onclick="deleteScene('${id}', event)">×</span>` : ''}
-                `;
-                item.onclick = () => { activeSceneId = id; renderUI(); };
-                sceneListEl.appendChild(item);
+            // Update Viewport & Configurator
+            if (engine === 'wheel') {
+                document.getElementById('preview-badge').innerText = "Live Preview: Custom Wheel";
+                canvas.style.display = "block";
+                minesGrid.style.display = "none";
+                document.getElementById('config-wheel').style.display = "block";
+                document.getElementById('config-mines').style.display = "none";
+                document.getElementById('world-title').value = "My Stake Wheel";
+                testSpinBtn.style.display = "inline-block";
+                testSpinBtn.innerText = "▶ Test Spin Animation";
+                renderWheelUI();
+            } else if (engine === 'mines') {
+                document.getElementById('preview-badge').innerText = "Live Preview: Grid Mines";
+                canvas.style.display = "none";
+                minesGrid.style.display = "grid";
+                document.getElementById('config-wheel').style.display = "none";
+                document.getElementById('config-mines').style.display = "block";
+                document.getElementById('world-title').value = "Cyber Mines";
+                testSpinBtn.style.display = "inline-block";
+                testSpinBtn.innerText = "🔄 Reset Grid Preview";
+                renderMinesPreview();
+                calculateMinesMath();
             }
         }
 
-        function renderActiveScene() {
-            const scene = graph[activeSceneId];
-            activeSceneNameEl.value = scene.name;
-            activeSceneIdEl.innerText = `ID: ${activeSceneId}`;
-            outcomeListEl.innerHTML = "";
-
-            // Create dropdown options for all scenes (to link to)
-            let sceneOptions = "";
-            for (const id of Object.keys(graph)) {
-                sceneOptions += `<option value="${id}">${graph[id].name} (${id})</option>`;
-            }
-
-            scene.outcomes.forEach(out => {
-                const tr = document.createElement('tr');
-                tr.className = 'node-row';
-                
-                let valueInput = "";
-                if (out.type === "terminal") {
-                    valueInput = `<div style="display:flex; align-items:center;"><input type="number" class="ide-input number" value="${out.value}" step="0.1" min="0" onchange="updateOutcome(${out.id}, 'value', this.value)"><span style="margin-left:5px; color:#888;">x</span></div>`;
-                } else {
-                    valueInput = `<select class="ide-select" onchange="updateOutcome(${out.id}, 'value', this.value)">
-                        <option value="" disabled ${!out.value ? 'selected' : ''}>Select Destination...</option>
-                        ${sceneOptions.replace(`value="${out.value}"`, `value="${out.value}" selected`)}
-                    </select>`;
-                }
-
-                tr.innerHTML = `
-                    <td><input type="text" class="ide-input" value="${out.name}" onchange="updateOutcome(${out.id}, 'name', this.value)"></td>
-                    <td><div style="display:flex; align-items:center;"><input type="number" class="ide-input number" value="${out.prob}" step="0.1" min="0" max="100" onchange="updateOutcome(${out.id}, 'prob', this.value)"><span style="margin-left:5px; color:#888;">%</span></div></td>
-                    <td>
-                        <select class="ide-select" onchange="updateOutcome(${out.id}, 'type', this.value)">
-                            <option value="terminal" ${out.type === 'terminal' ? 'selected' : ''}>Pay Winnings (Terminal)</option>
-                            <option value="link" ${out.type === 'link' ? 'selected' : ''}>Jump to Scene (Link)</option>
-                        </select>
-                    </td>
-                    <td>${valueInput}</td>
-                    <td style="text-align:center;"><button class="btn-tool" style="background:transparent; color:var(--error-red); border:none;" onclick="deleteOutcome(${out.id})">✖</button></td>
+        // ==========================================
+        // 3. WHEEL ENGINE LOGIC
+        // ==========================================
+        function renderWheelUI() {
+            sliceListEl.innerHTML = "";
+            wheelSlices.forEach(slice => {
+                const row = document.createElement('div');
+                row.className = 'slice-row';
+                row.innerHTML = `
+                    <input type="color" value="${slice.color}" style="width:25px; height:25px; border:none; background:transparent; cursor:pointer;" onchange="updateSlice(${slice.id}, 'color', this.value)">
+                    <input type="number" class="ide-input" value="${slice.multiplier}" step="0.1" min="0" onchange="updateSlice(${slice.id}, 'multiplier', this.value)">
+                    <input type="number" class="ide-input" value="${slice.prob}" step="0.1" min="0" max="100" onchange="updateSlice(${slice.id}, 'prob', this.value)">
+                    <button class="btn-del" onclick="removeSlice(${slice.id})">✖</button>
                 `;
-                outcomeListEl.appendChild(tr);
+                sliceListEl.appendChild(row);
             });
+            drawWheel(0);
+            calculateWheelMath();
         }
 
-        // ==========================================
-        // 3. GRAPH MUTATION LOGIC
-        // ==========================================
-        document.getElementById('add-scene-btn').onclick = () => {
-            const id = `scene_${sceneIdCounter++}`;
-            graph[id] = { name: "New Scene", outcomes: [] };
-            activeSceneId = id;
-            renderUI();
-        };
+        window.updateSlice = (id, field, val) => {
+            const slice = wheelSlices.find(s => s.id === id);
+            if(slice) {
+                slice[field] = field === 'color' ? val : parseFloat(val) || 0;
+                renderWheelUI();
+            }
+        }
 
-        window.deleteScene = (id, e) => {
-            e.stopPropagation();
-            if (id === 'root') return;
-            delete graph[id];
+        document.getElementById('add-slice-btn').onclick = () => {
+            wheelSlices.push({ id: sliceIdCounter++, color: "#ffffff", multiplier: 1.0, prob: 0.0 });
+            renderWheelUI();
+        }
+
+        window.removeSlice = (id) => {
+            if(wheelSlices.length <= 2) return alert("Wheel must have at least 2 segments.");
+            wheelSlices = wheelSlices.filter(s => s.id !== id);
+            renderWheelUI();
+        }
+
+        window.autoBalanceWheel = () => {
+            let total = wheelSlices.reduce((sum, s) => sum + s.prob, 0);
+            if(total === 0) return alert("Set some probabilities first.");
+            wheelSlices.forEach(s => s.prob = parseFloat(((s.prob / total) * 100).toFixed(2)));
+            let newTotal = wheelSlices.reduce((sum, s) => sum + s.prob, 0);
+            let diff = parseFloat((100 - newTotal).toFixed(2));
+            if(diff !== 0) wheelSlices[0].prob = parseFloat((wheelSlices[0].prob + diff).toFixed(2));
+            renderWheelUI();
+        }
+
+        function calculateWheelMath() {
+            let totalProb = 0; let rtp = 0;
+            wheelSlices.forEach(s => {
+                totalProb += s.prob;
+                rtp += (s.prob / 100) * s.multiplier;
+            });
+
+            const p = totalProb.toFixed(2);
+            const r = (rtp * 100).toFixed(2);
             
-            // Cleanup broken links
-            for (const s of Object.values(graph)) {
-                s.outcomes.forEach(out => { if (out.type === 'link' && out.value === id) out.value = ""; });
-            }
-            if (activeSceneId === id) activeSceneId = 'root';
-            renderUI();
-        };
+            rtpDisplay.innerText = `${r}%`;
+            edgeDisplay.innerText = `${(100 - (rtp * 100)).toFixed(2)}%`;
 
-        document.getElementById('add-outcome-btn').onclick = () => {
-            graph[activeSceneId].outcomes.push({ id: outcomeIdCounter++, name: "New Event", prob: 0, type: "terminal", value: 0 });
-            renderUI();
-        };
-
-        window.updateOutcome = (outId, field, val) => {
-            const out = graph[activeSceneId].outcomes.find(o => o.id === outId);
-            if (!out) return;
-            
-            if (field === 'prob' || (field === 'value' && out.type === 'terminal')) out[field] = parseFloat(val) || 0;
-            else out[field] = val;
-
-            // Auto-reset value field when switching types
-            if (field === 'type') out.value = val === 'terminal' ? 0 : "";
-            renderUI();
-        };
-
-        window.deleteOutcome = (outId) => {
-            graph[activeSceneId].outcomes = graph[activeSceneId].outcomes.filter(o => o.id !== outId);
-            renderUI();
-        };
-
-        activeSceneNameEl.onchange = (e) => {
-            graph[activeSceneId].name = e.target.value;
-            renderUI();
-        };
-
-        // ==========================================
-        // 4. RECURSIVE RTP SECURITY ENGINE
-        // ==========================================
-        function calculateGlobalMath() {
-            let errorMsg = null;
-            let isValid = true;
-
-            // Step 1: Ensure every scene has exactly 100% probability total
-            for (const [id, scene] of Object.entries(graph)) {
-                const total = scene.outcomes.reduce((sum, out) => sum + out.prob, 0);
-                if (Math.abs(total - 100) > 0.01) {
-                    isValid = false;
-                    errorMsg = `Scene "${scene.name}" probability total is ${total.toFixed(2)}% (Must be 100%)`;
-                    break;
-                }
-                for (const out of scene.outcomes) {
-                    if (out.type === 'link' && (!out.value || !graph[out.value])) {
-                        isValid = false;
-                        errorMsg = `Scene "${scene.name}" has a broken link.`;
-                        break;
-                    }
-                }
-            }
-
-            // Step 2: Recursive Expected Value (EV) calculation
-            let globalEV = 0;
-            if (isValid) {
-                function calcEV(sceneId, visited) {
-                    if (visited.has(sceneId)) throw new Error(`Infinite Loop Detected involving "${graph[sceneId].name}"`);
-                    visited.add(sceneId);
-
-                    let ev = 0;
-                    for (const out of graph[sceneId].outcomes) {
-                        if (out.type === 'terminal') {
-                            ev += (out.prob / 100) * out.value;
-                        } else if (out.type === 'link') {
-                            ev += (out.prob / 100) * calcEV(out.value, new Set(visited));
-                        }
-                    }
-                    return ev;
-                }
-
-                try {
-                    globalEV = calcEV('root', new Set());
-                    const rtp = globalEV * 100;
-                    
-                    if (rtp > 99.00) {
-                        isValid = false;
-                        errorMsg = `Global RTP exceeds 99.00% (${rtp.toFixed(2)}%)`;
-                    }
-                } catch (e) {
-                    isValid = false;
-                    errorMsg = e.message;
-                }
-            }
-
-            // Update Inspector UI
-            if (isValid) {
-                rtpDisplay.innerText = `${(globalEV * 100).toFixed(2)}%`;
-                edgeDisplay.innerText = `${(100 - (globalEV * 100)).toFixed(2)}%`;
-                rtpDisplay.style.color = "var(--text-bright)";
-                mathStatus.className = "status-badge status-safe";
-                mathStatus.innerText = "Graph Verified: Protocol Safe";
-                errorLog.style.display = "none";
-                publishBtn.disabled = false;
-            } else {
-                rtpDisplay.innerText = "LOCKED";
-                edgeDisplay.innerText = "--";
+            if (p !== "100.00") {
+                rtpDisplay.innerText = `ERR (Prob: ${p}%)`;
+                mathStatus.className = "status-badge status-error";
+                mathStatus.innerText = "Error: Total Chance must be exactly 100%";
+                publishBtn.disabled = true;
+            } else if (r > 99.00) {
                 rtpDisplay.style.color = "var(--error-red)";
                 mathStatus.className = "status-badge status-error";
-                mathStatus.innerText = "Graph Validation Failed";
-                errorLog.innerText = errorMsg;
-                errorLog.style.display = "block";
+                mathStatus.innerText = "Error: RTP exceeds 99.00%";
                 publishBtn.disabled = true;
+            } else {
+                rtpDisplay.style.color = "white";
+                mathStatus.className = "status-badge status-safe";
+                mathStatus.innerText = "Math Verified & Safe";
+                publishBtn.disabled = false;
             }
         }
 
-        // ==========================================
-        // 5. JOURNEY SIMULATOR (PLAYTEST)
-        // ==========================================
-        window.runSimulation = () => {
-            if (publishBtn.disabled) return alert("Fix graph errors to simulate.");
-            journeyLog.innerHTML = "";
-            simulateScene('root');
+        // Live Canvas Wheel Drawing
+        let currentRotation = 0;
+        function drawWheel(rotationOffset) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = 220;
+
+            let startAngle = rotationOffset;
+            
+            // Draw Slices based on probability weights
+            wheelSlices.forEach(slice => {
+                const sliceAngle = (slice.prob / 100) * (Math.PI * 2);
+                
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+                ctx.fillStyle = slice.color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#0b1016";
+                ctx.stroke();
+
+                // Draw Text
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 18px Arial";
+                ctx.shadowColor = "rgba(0,0,0,0.8)";
+                ctx.shadowBlur = 4;
+                ctx.fillText(`${slice.multiplier}x`, radius - 20, 6);
+                ctx.restore();
+
+                startAngle += sliceAngle;
+            });
+
+            // Draw Center Hub
+            ctx.beginPath();
+            ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+            ctx.fillStyle = "#1f2b38";
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw Pointer
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - radius - 10);
+            ctx.lineTo(cx - 15, cy - radius - 30);
+            ctx.lineTo(cx + 15, cy - radius - 30);
+            ctx.fillStyle = "white";
+            ctx.fill();
+        }
+
+        // Wheel Animation Simulator
+        let isSpinning = false;
+        testSpinBtn.onclick = () => {
+            if (currentEngine === 'mines') { renderMinesPreview(); return; }
+            if (isSpinning || publishBtn.disabled) return;
+            
+            isSpinning = true;
+            let speed = 0.5;
+            let friction = 0.99;
+            
+            function animate() {
+                currentRotation += speed;
+                speed *= friction;
+                drawWheel(currentRotation);
+                
+                if (speed > 0.002) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                }
+            }
+            animate();
         };
 
-        function simulateScene(sceneId) {
-            const scene = graph[sceneId];
+        // ==========================================
+        // 4. MINES ENGINE LOGIC
+        // ==========================================
+        window.renderMinesPreview = function() {
+            const themeChars = document.getElementById('mines-theme').value.split(',');
+            const safeIcon = themeChars[0];
+            const mineIcon = themeChars[1];
+
+            minesGrid.innerHTML = "";
+            for(let i=0; i<25; i++) {
+                const tile = document.createElement('div');
+                tile.className = "mine-tile";
+                // Interactive preview logic
+                tile.onclick = function() {
+                    if (this.innerHTML !== "") return;
+                    // 20% chance of mine for preview visual
+                    const isMine = Math.random() < 0.2;
+                    this.innerHTML = isMine ? mineIcon : safeIcon;
+                    this.style.background = isMine ? "rgba(255, 77, 77, 0.2)" : "rgba(0, 231, 1, 0.2)";
+                };
+                minesGrid.appendChild(tile);
+            }
+        }
+
+        window.calculateMinesMath = function() {
+            const edge = parseFloat(document.getElementById('mines-edge').value) || 4.0;
+            const rtp = (100 - edge).toFixed(2);
             
-            // Append Scene Start Log
-            const log = document.createElement('div');
-            log.className = 'log-entry';
-            log.innerHTML = `<div class="log-scene">Arrived at: ${scene.name}</div><div class="log-action" style="color:#888;">Rolling probability...</div>`;
-            journeyLog.appendChild(log);
-            journeyLog.scrollTop = journeyLog.scrollHeight;
-
-            // Artificial suspense delay
-            setTimeout(() => {
-                const roll = Math.random() * 100;
-                let cumulative = 0;
-                let result = scene.outcomes[0];
-
-                for (const out of scene.outcomes) {
-                    cumulative += out.prob;
-                    if (roll <= cumulative) { result = out; break; }
-                }
-
-                if (result.type === 'terminal') {
-                    log.classList.add('log-terminal');
-                    log.innerHTML = `<div class="log-scene">${scene.name}</div><div class="log-action">Event: ${result.name}</div><div style="margin-top:10px; font-weight:bold; color:var(--accent-green);">Payout: ${result.value}x Wager</div>`;
-                } else {
-                    log.innerHTML = `<div class="log-scene">${scene.name}</div><div class="log-action">Path Chosen: ${result.name}</div><div style="margin-top:5px; font-size:12px; color:var(--accent-blue);">Traveling to next scene...</div>`;
-                    setTimeout(() => simulateScene(result.value), 800);
-                }
-                journeyLog.scrollTop = journeyLog.scrollHeight;
-            }, 800);
+            rtpDisplay.innerText = `${rtp}%`;
+            edgeDisplay.innerText = `${edge.toFixed(2)}%`;
+            rtpDisplay.style.color = "white";
+            mathStatus.className = "status-badge status-safe";
+            mathStatus.innerText = "Native Grid Math Applied";
+            publishBtn.disabled = false;
         }
 
         // ==========================================
-        // 6. FIREBASE DEPLOYMENT
+        // 5. FIREBASE DEPLOYMENT
         // ==========================================
         async function initFirebase() {
             try {
@@ -478,33 +484,46 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
                 onAuthStateChanged(auth, user => { activeUser = user; });
-            } catch(e) { console.log("Local Dev Mode - Firebase not linked."); }
-            renderUI();
+            } catch(e) { console.log("Running locally. Firebase not detected."); }
+            
+            renderWheelUI(); // Init Default
         }
 
         publishBtn.addEventListener('click', async () => {
-            if (!activeUser) return alert("Security Error: Not authenticated.");
-            const title = document.getElementById('world-title').value.trim() || "My Graph World";
+            if (!activeUser) return alert("Must be logged in to publish.");
+            const title = document.getElementById('world-title').value.trim() || "My Game";
             
             publishBtn.disabled = true;
-            publishBtn.innerText = "Deploying Graph...";
+            publishBtn.innerText = "Deploying...";
+
+            let payload = {
+                title: title,
+                type: currentEngine,
+                creator: activeUser.displayName || activeUser.email.split('@')[0],
+                creatorUid: activeUser.uid,
+                createdAt: new Date()
+            };
+
+            if (currentEngine === 'wheel') {
+                payload.emoji = "🎡";
+                payload.paytable = wheelSlices.map(s => ({
+                    color: s.color, multiplier: s.multiplier, prob: s.prob
+                }));
+            } else if (currentEngine === 'mines') {
+                payload.emoji = "💣";
+                payload.theme = document.getElementById('mines-theme').value;
+                payload.houseEdge = parseFloat(document.getElementById('mines-edge').value);
+            }
 
             try {
-                await addDoc(collection(db, "games"), {
-                    title: title,
-                    type: "graph", 
-                    creator: activeUser.displayName || activeUser.email.split('@')[0],
-                    creatorUid: activeUser.uid,
-                    graph: graph, // Save entire scene graph structure
-                    createdAt: new Date()
-                });
-
-                document.getElementById('save-status').style.display = "inline";
+                await addDoc(collection(db, "games"), payload);
+                publishBtn.innerText = "Deployed!";
+                publishBtn.style.background = "white";
                 setTimeout(() => window.location.href = 'home.html', 1500);
             } catch (error) {
-                alert("Failed to publish world.");
+                alert("Failed to publish.");
                 publishBtn.disabled = false;
-                publishBtn.innerText = "Publish Graph";
+                publishBtn.innerText = "Deploy to Blockchain";
             }
         });
 
