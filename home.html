@@ -133,14 +133,6 @@
         .aura-rarity { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
 
         #fallback-interface { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-        /* CREATE GAME MODAL */
-        .create-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 150; justify-content: center; align-items: center; }
-        .create-content { background: var(--bg-panel); border: 1px solid var(--border-color); width: 440px; padding: 40px; border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 20px; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; }
-        .input-group label { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
-        .input-group input, .input-group select { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; outline: none; }
-        .btn-deploy { background: var(--accent-green); color: var(--bg-dark); border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -154,7 +146,8 @@
             <li>📈 Custom Crash</li>
             <li>🏆 Global Rankings</li>
         </ul>
-        <button class="btn-create-lobby" onclick="openCreateModal()">Deploy World</button>
+        <!-- REDIRECTS TO CREATE.HTML NOW -->
+        <button class="btn-create-lobby" onclick="window.location.href='create.html'">Deploy World</button>
     </aside>
 
     <main>
@@ -186,7 +179,7 @@
                 <div class="hero-text">
                     <h1>Sols RNG: Reborn</h1>
                     <p>Roll for a 1-in-10,000 custom aura! Track payouts and rare, cryptographic outcomes in real-time.</p>
-                    <button class="btn-play-hero" onclick="openGame('Sols RNG: Reborn', 'rng')">Play Now</button>
+                    <button class="btn-play-hero" onclick="window.openGame('Sols RNG: Reborn', 'rng')">Play Now</button>
                 </div>
                 <div style="font-size: 100px;">🌌</div>
             </div>
@@ -250,41 +243,11 @@
         </div>
     </div>
 
-    <!-- CREATE LOBBY WORLD MODAL -->
-    <div class="create-modal" id="createModal">
-        <div class="create-content">
-            <h3 style="font-size: 22px;">Deploy UGC World</h3>
-            <p style="color: var(--text-muted); font-size: 13px; margin-top: -10px;">Your custom configuration will immediately go live on the public lobby list.</p>
-            
-            <div class="input-group">
-                <label for="new-game-title">World Title</label>
-                <input type="text" id="new-game-title" placeholder="My Neon Arcade" required>
-            </div>
-            
-            <div class="input-group">
-                <label for="new-game-type">Arcade Engine Template</label>
-                <select id="new-game-type">
-                    <option value="crash">Multiplayer Crash (SVM-rocket)</option>
-                    <option value="plinko">Peg-Physics Plinko Board</option>
-                    <option value="rng">Aura Drop Simulator (Sols RNG)</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label for="new-game-emoji">Visual Thumbnail Emoji</label>
-                <input type="text" id="new-game-emoji" value="🎮" maxlength="4">
-            </div>
-
-            <button class="btn-deploy" id="btn-deploy-confirm">Publish World</button>
-            <button class="dropdown-btn" style="color: var(--text-muted); border-color: var(--border-color);" onclick="closeCreateModal()">Cancel</button>
-        </div>
-    </div>
-
     <!-- MAIN FIREBASE & APP LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let auth = null;
         let db = null;
@@ -325,7 +288,7 @@
 
         async function initializePlatform() {
             try {
-                // Initialize canvas only after DOM is ready to prevent "getContext of null" error
+                // Initialize canvas only after DOM is ready
                 canvas = document.getElementById('plinko-canvas');
                 if (canvas) {
                     ctx = canvas.getContext('2d');
@@ -430,37 +393,7 @@
             signOut(auth).then(() => { window.location.href = 'login.html'; });
         });
 
-        window.openCreateModal = function() { document.getElementById('createModal').style.display = 'flex'; }
-        window.closeCreateModal = function() { document.getElementById('createModal').style.display = 'none'; }
-
-        async function deployUGCWorld() {
-            const titleInput = document.getElementById('new-game-title').value.trim();
-            const typeSelect = document.getElementById('new-game-type').value;
-            const emojiInput = document.getElementById('new-game-emoji').value.trim();
-
-            if (!titleInput) {
-                alert("Please declare a world title.");
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "games"), {
-                    title: titleInput,
-                    type: typeSelect,
-                    emoji: emojiInput || '🎮',
-                    creator: activeUser.displayName || activeUser.email.split('@')[0],
-                    creatorUid: activeUser.uid,
-                    createdAt: new Date()
-                });
-                window.closeCreateModal();
-                document.getElementById('new-game-title').value = "";
-            } catch (error) {
-                alert("Failed to deploy world. Verify Firestore database is initialized.");
-            }
-        }
-
         function bindUGEvents() {
-            document.getElementById('btn-deploy-confirm').addEventListener('click', deployUGCWorld);
             document.getElementById('close-modal-btn').addEventListener('click', window.closeGame);
             betBtn.addEventListener('click', handleWager);
         }
@@ -582,17 +515,8 @@
 
             } catch (err) {
                 console.error("Wager API Error:", err);
-                
-                // Fallback prototype mode if API is not deployed
-                if(err.message.includes("NetworkError") || err.message.includes("Unexpected token")) {
-                    console.warn("Secure API not detected. Falling back to local prototype math.");
-                    if (activeGameType === "rng") prototypeRngGame(betValue);
-                    else if (activeGameType === "plinko") prototypePlinkoGame(betValue);
-                    else if (activeGameType === "crash") prototypeCrashGame(betValue);
-                } else {
-                    alert(`Error: ${err.message}`);
-                    betBtn.disabled = false;
-                }
+                alert(`Error: ${err.message}`);
+                betBtn.disabled = false;
             }
         }
 
