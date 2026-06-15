@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ Studio | Sandbox Workspace</title>
+    <title>BLOKQ Studio | Node Graph Engine</title>
     <style>
         /* CSS RESET & IDE VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -14,6 +14,7 @@
             --ide-border: #3e3e42;
             --ide-highlight: #094771;
             --accent-green: #00e701;
+            --accent-blue: #007acc;
             --text-main: #cccccc;
             --text-bright: #ffffff;
             --error-red: #f48771;
@@ -37,456 +38,438 @@
         /* STUDIO LAYOUT */
         .studio-layout { display: flex; flex: 1; overflow: hidden; }
 
-        /* LEFT TOOLBOX (Visuals & Theming) */
-        .toolbox { width: 260px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; overflow-y: auto; }
-        .panel-title { font-size: 11px; text-transform: uppercase; font-weight: bold; padding: 12px 15px; background: #2d2d30; color: #aaa; letter-spacing: 1px; border-bottom: 1px solid var(--ide-border); }
-        .setting-group { padding: 15px; border-bottom: 1px solid var(--ide-border); }
-        .setting-label { font-size: 12px; color: #888; font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; }
-        .ide-select, .ide-input { width: 100%; background: var(--ide-bg); border: 1px solid var(--ide-border); color: var(--text-bright); padding: 8px; border-radius: 4px; outline: none; font-size: 13px; }
-        .ide-select:focus, .ide-input:focus { border-color: var(--accent-green); }
+        /* LEFT: SCENE HIERARCHY */
+        .hierarchy { width: 260px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; }
+        .panel-title { font-size: 11px; text-transform: uppercase; font-weight: bold; padding: 12px 15px; background: #2d2d30; color: #aaa; letter-spacing: 1px; border-bottom: 1px solid var(--ide-border); display: flex; justify-content: space-between; align-items: center; }
+        .scene-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .scene-item { padding: 10px; background: var(--ide-bg); border: 1px solid var(--ide-border); border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-left: 3px solid transparent; }
+        .scene-item:hover { background: #2a2d2f; }
+        .scene-item.active { background: #2c313a; border-left-color: var(--accent-blue); color: var(--text-bright); }
+        .scene-item.root { border-left-color: var(--accent-green); }
+        .btn-add-scene { background: transparent; border: 1px dashed var(--ide-border); color: #888; padding: 10px; text-align: center; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 10px; }
+        .btn-add-scene:hover { border-color: var(--text-bright); color: var(--text-bright); }
 
-        /* CENTER WORKSPACE (Canvas & Logic) */
+        /* CENTER: WORKSPACE */
         .workspace { flex: 1; display: flex; flex-direction: column; background-color: #111; position: relative; }
         
-        /* 2D Viewport Simulator */
-        .viewport-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; background: #000; overflow: hidden; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        .viewport-ui { position: absolute; top: 20px; left: 20px; z-index: 5; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--ide-border); backdrop-filter: blur(5px); }
-        .world-title-input { background: transparent; border: none; color: var(--text-bright); font-size: 20px; font-weight: bold; outline: none; width: 250px; }
-        
-        .playtest-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 5; background: var(--ide-highlight); color: white; border: 1px solid #007acc; padding: 10px 30px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; }
-        .playtest-btn:hover { background: #0b5a8e; transform: translateX(-50%) scale(1.05); }
+        /* Playtest Visualizer */
+        .visualizer { flex: 1; background: radial-gradient(circle at center, #1e1e1e 0%, #000 100%); display: flex; flex-direction: column; align-items: center; padding: 40px; overflow-y: auto; border-bottom: 1px solid var(--ide-border); }
+        .journey-log { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 15px; }
+        .log-entry { background: rgba(255,255,255,0.05); border-left: 3px solid var(--ide-highlight); padding: 15px; border-radius: 6px; animation: slideIn 0.3s ease-out; }
+        .log-scene { font-size: 12px; color: var(--accent-blue); text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .log-action { font-size: 16px; color: var(--text-bright); }
+        .log-terminal { border-left-color: var(--accent-green); background: rgba(0, 231, 1, 0.05); }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Bottom Logic Drawer (Paytable) */
-        .logic-drawer { height: 280px; background-color: var(--ide-panel); border-top: 1px solid var(--ide-border); display: flex; flex-direction: column; }
-        .logic-header { padding: 10px 15px; background: #2d2d30; font-size: 11px; font-weight: bold; color: #aaa; text-transform: uppercase; border-bottom: 1px solid var(--ide-border); display: flex; justify-content: space-between; }
-        .logic-content { flex: 1; overflow-y: auto; padding: 15px; }
-
+        /* Active Scene Editor */
+        .editor-drawer { height: 350px; background-color: var(--ide-panel); display: flex; flex-direction: column; }
+        .editor-header { padding: 15px; background: #2d2d30; border-bottom: 1px solid var(--ide-border); display: flex; align-items: center; gap: 15px; }
+        .scene-name-input { background: transparent; border: none; border-bottom: 1px solid var(--ide-border); color: var(--text-bright); font-size: 18px; font-weight: bold; outline: none; width: 300px; padding-bottom: 5px; }
+        .scene-name-input:focus { border-bottom-color: var(--accent-blue); }
+        
+        .editor-content { flex: 1; overflow-y: auto; padding: 15px; }
         .node-table { width: 100%; border-collapse: collapse; }
-        .node-table th { text-align: left; padding: 8px; font-size: 11px; color: #888; border-bottom: 1px solid var(--ide-border); }
+        .node-table th { text-align: left; padding: 8px; font-size: 11px; color: #888; border-bottom: 1px solid var(--ide-border); text-transform: uppercase; }
         .node-row { background: var(--ide-bg); border-bottom: 1px solid var(--ide-border); }
-        .node-row td { padding: 6px; }
+        .node-row td { padding: 8px; }
         
-        .btn-add { background: transparent; border: 1px dashed var(--ide-border); color: #888; padding: 10px; width: 100%; text-align: center; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 10px; }
-        .btn-add:hover { border-color: var(--text-bright); color: var(--text-bright); }
-
-        /* RIGHT INSPECTOR (Math constraints) */
-        .inspector { width: 280px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; }
+        .ide-input, .ide-select { background: var(--ide-panel); border: 1px solid var(--ide-border); color: var(--text-bright); padding: 8px; border-radius: 4px; outline: none; font-size: 13px; width: 100%; }
+        .ide-input:focus, .ide-select:focus { border-color: var(--accent-blue); }
+        .number { text-align: right; }
+        
+        /* RIGHT: MATH INSPECTOR */
+        .inspector { width: 300px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; }
+        .math-group { padding: 20px; border-bottom: 1px solid var(--ide-border); }
         .math-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; }
-        .math-val { font-family: monospace; font-size: 15px; font-weight: bold; color: var(--text-bright); }
-        .status-badge { padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; }
+        .math-val { font-family: monospace; font-size: 16px; font-weight: bold; color: var(--text-bright); }
+        
+        .status-badge { padding: 8px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; line-height: 1.4; }
         .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 231, 1, 0.2); }
         .status-error { background: rgba(244, 135, 113, 0.1); color: var(--error-red); border: 1px solid rgba(244, 135, 113, 0.2); }
+        .error-log { margin-top: 15px; font-size: 12px; color: var(--error-red); background: rgba(244, 135, 113, 0.05); padding: 10px; border-radius: 4px; display: none; }
     </style>
 </head>
 <body>
 
-    <!-- TOOLBAR -->
     <div class="top-bar">
         <div class="top-bar-left">
             <div class="brand">🟩 BLOK<span>Q</span> Studio</div>
         </div>
         <div class="toolbar">
-            <span id="save-status" style="margin-right: 15px; color: var(--accent-green); display: none;">✓ Deployed to Protocol</span>
+            <input type="text" id="world-title" value="My Dungeon Crawler" style="background:transparent; border:none; color:white; font-weight:bold; outline:none; text-align:right; margin-right: 20px; font-size:14px;">
             <button class="btn-tool" onclick="window.location.href='home.html'">Exit to Lobby</button>
-            <button class="btn-tool btn-primary" id="publish-btn">Publish World</button>
+            <button class="btn-tool btn-primary" id="publish-btn">Publish Graph</button>
         </div>
     </div>
 
     <div class="studio-layout">
         
-        <!-- LEFT: VISUAL THEME BUILDER -->
-        <div class="toolbox">
-            <div class="panel-title">Visual Sandbox</div>
-            
-            <div class="setting-group">
-                <label class="setting-label">Environment Theme</label>
-                <select class="ide-select" id="theme-select">
-                    <option value="space">Deep Space (Stars)</option>
-                    <option value="cyber">Cyber Grid (Neon)</option>
-                    <option value="mystic">Mystic Void (Particles)</option>
-                </select>
-                <div style="font-size: 11px; color: #888; margin-top: 5px;">The background ambiance of your world.</div>
+        <!-- LEFT: SCENE HIERARCHY -->
+        <div class="hierarchy">
+            <div class="panel-title">
+                Scene Graph
             </div>
-
-            <div class="setting-group">
-                <label class="setting-label">Reveal Mechanic</label>
-                <select class="ide-select" id="mechanic-select">
-                    <option value="crate">Loot Crate</option>
-                    <option value="portal">Summoning Portal</option>
-                    <option value="card">Hologram Card</option>
-                </select>
-                <div style="font-size: 11px; color: #888; margin-top: 5px;">How players physically unbox their result.</div>
+            <div style="font-size: 11px; padding: 10px 15px; color: #888; border-bottom: 1px solid var(--ide-border);">
+                The Entry Scene is the start of the player's journey. Link scenes together to build deep probability trees.
             </div>
-
-            <div class="setting-group" style="border-bottom: none;">
-                <div style="background: rgba(9, 71, 113, 0.2); border-left: 3px solid var(--ide-highlight); padding: 10px; font-size: 12px; color: #9cdcfe; line-height: 1.5;">
-                    <strong>Creative Freedom:</strong><br>
-                    You control the visual experience completely. The mathematics on the right are locked to prevent exploits, but the art is entirely yours.
-                </div>
+            <div class="scene-list" id="scene-list">
+                <!-- Scenes Injected Here -->
             </div>
+            <button class="btn-add-scene" id="add-scene-btn">+ Add New Scene</button>
         </div>
 
-        <!-- CENTER: LIVE VIEWPORT & LOGIC EDITOR -->
+        <!-- CENTER: VISUALIZER & EDITOR -->
         <div class="workspace">
-            <!-- 2D Canvas Scene Simulator -->
-            <div class="viewport-container" id="viewport">
-                <canvas id="sim-canvas"></canvas>
-                
-                <div class="viewport-ui">
-                    <input type="text" id="world-title" class="world-title-input" value="My Custom World" placeholder="Name your world...">
+            
+            <!-- Playtest Terminal -->
+            <div class="visualizer" id="visualizer">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button class="btn-tool" style="background: var(--accent-blue); border:none; padding: 10px 30px; font-size: 14px; font-weight:bold; color:white;" onclick="runSimulation()">▶ Run Journey Simulation</button>
+                    <div style="font-size: 11px; color:#888; margin-top:10px;">Simulates a player walking your probability graph.</div>
                 </div>
-
-                <button class="playtest-btn" onclick="triggerPlaytest()">▶ Run Simulation</button>
+                <div class="journey-log" id="journey-log">
+                    <!-- Logs Injected -->
+                </div>
             </div>
 
-            <!-- Math Matrix (The Lock) -->
-            <div class="logic-drawer">
-                <div class="logic-header">
-                    <span>🧮 Probability Matrix (Drop Table)</span>
-                    <span style="color: var(--accent-green); cursor: pointer;" onclick="autoBalanceChance()">⚖️ Auto-Balance Math</span>
+            <!-- Active Scene Editor -->
+            <div class="editor-drawer">
+                <div class="editor-header">
+                    <span style="font-size: 20px;">🎬</span>
+                    <input type="text" class="scene-name-input" id="active-scene-name" placeholder="Scene Name...">
+                    <span style="font-size: 11px; color: #888;" id="active-scene-id">ID: root</span>
                 </div>
-                <div class="logic-content">
+                <div class="editor-content">
                     <table class="node-table">
                         <thead>
                             <tr>
-                                <th style="width: 8%;">Emoji</th>
-                                <th style="width: 35%;">Outcome Name</th>
-                                <th style="width: 10%;">Color</th>
-                                <th style="width: 20%;">Payout (x)</th>
-                                <th style="width: 22%;">Chance (%)</th>
+                                <th style="width: 30%;">Outcome Name</th>
+                                <th style="width: 15%;">Chance (%)</th>
+                                <th style="width: 25%;">Action Type</th>
+                                <th style="width: 25%;">Value / Destination</th>
                                 <th style="width: 5%;"></th>
                             </tr>
                         </thead>
-                        <tbody id="node-list">
-                            <!-- Injected -->
+                        <tbody id="outcome-list">
+                            <!-- Outcomes Injected -->
                         </tbody>
                     </table>
-                    <button class="btn-add" id="add-node-btn">+ Add Visual Outcome</button>
+                    <button class="btn-add-scene" id="add-outcome-btn" style="border-style: dashed; margin-top:15px;">+ Add Outcome Branch</button>
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT: MATHEMATICAL INSPECTOR -->
+        <!-- RIGHT: RECURSIVE MATH INSPECTOR -->
         <div class="inspector">
-            <div class="panel-title">Protocol Inspector</div>
-            <div style="padding: 20px; border-bottom: 1px solid var(--ide-border);">
-                
+            <div class="panel-title">Recursive Math Engine</div>
+            
+            <div class="math-group">
                 <div class="math-stat">
-                    <span>Total Probability:</span>
-                    <span class="math-val" id="prob-display">100.00%</span>
+                    <span>Global RTP:</span>
+                    <span class="math-val" id="rtp-display">Calculating...</span>
+                </div>
+                <div class="math-stat">
+                    <span>House Edge:</span>
+                    <span class="math-val" id="edge-display" style="color: var(--accent-green);">--</span>
                 </div>
                 
-                <div class="math-stat" style="margin-top: 15px;">
-                    <span>Calculated RTP:</span>
-                    <span class="math-val" id="rtp-display">90.00%</span>
+                <div class="status-badge status-error" id="math-status">
+                    Validating...
                 </div>
-
-                <div class="math-stat">
-                    <span>House Edge (Profit):</span>
-                    <span class="math-val" id="edge-display" style="color: var(--accent-green);">10.00%</span>
-                </div>
-
-                <div class="status-badge status-safe" id="math-status">
-                    Math Verified & Safe
-                </div>
+                <div class="error-log" id="error-log"></div>
             </div>
 
-            <div style="padding: 20px;">
-                <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; color: #888; text-transform: uppercase;">Security Lock</div>
-                <div style="font-size: 12px; color: #888; line-height: 1.5;">
-                    To protect the BLOKQ decentralized economy:<br><br>
-                    • <strong>Total Probability</strong> must equal exactly 100%.<br>
-                    • <strong>RTP (Return To Player)</strong> cannot mathematically exceed 99.00%.<br><br>
-                    If the math violates these rules, the Publish protocol will automatically lock.
+            <div class="math-group" style="border-bottom: none;">
+                <div style="font-size: 11px; color: #aaa; line-height: 1.6;">
+                    <strong>Security Engine:</strong><br><br>
+                    The compiler recursively traces every possible path a player can take through your scenes.<br><br>
+                    If the total Expected Value (Global RTP) across all branches exceeds 99%, or if a circular infinite loop is detected, publishing will be cryptographically locked.
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT INCLUDES FIREBASE, MATH LOGIC, AND THE CANVAS 2D ENGINE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        /* =======================================================
-           1. CORE STATE & PAYTABLE LOGIC
-        ======================================================= */
-        let activeUser = null;
+        // ==========================================
+        // 1. STATE MANAGEMENT (The Scene Graph)
+        // ==========================================
+        let auth = null;
         let db = null;
+        let activeUser = null;
 
-        let worldState = {
-            title: "My Custom World",
-            theme: "space",
-            mechanic: "crate",
-            paytable: [
-                { id: 1, emoji: "🗑️", name: "Junk", color: "#666666", multiplier: 0.0, prob: 60.0 },
-                { id: 2, emoji: "🔮", name: "Energy Orb", color: "#3498db", multiplier: 1.5, prob: 30.0 },
-                { id: 3, emoji: "🗡️", name: "Neon Katana", color: "#e74c3c", multiplier: 3.0, prob: 9.0 },
-                { id: 4, emoji: "👑", name: "Galactic Crown", color: "#f1c40f", multiplier: 18.0, prob: 1.0 }
-            ]
+        let activeSceneId = "root";
+        let sceneIdCounter = 1;
+        let outcomeIdCounter = 100;
+
+        let graph = {
+            "root": {
+                name: "Entrance Door",
+                outcomes: [
+                    { id: 1, name: "Trap Triggered", prob: 50.0, type: "terminal", value: 0 },
+                    { id: 2, name: "Find Secret Stairs", prob: 50.0, type: "link", value: "scene_1" }
+                ]
+            },
+            "scene_1": {
+                name: "The Treasure Vault",
+                outcomes: [
+                    { id: 3, name: "Empty Chest", prob: 80.0, type: "terminal", value: 0.5 },
+                    { id: 4, name: "Gold Stash", prob: 20.0, type: "terminal", value: 4.5 }
+                ]
+            }
         };
-        let nodeIdCounter = 5;
 
-        // UI Elements
-        const themeSelect = document.getElementById('theme-select');
-        const mechanicSelect = document.getElementById('mechanic-select');
-        const nodeList = document.getElementById('node-list');
-        const probDisplay = document.getElementById('prob-display');
+        // DOM Elements
+        const sceneListEl = document.getElementById('scene-list');
+        const outcomeListEl = document.getElementById('outcome-list');
+        const activeSceneNameEl = document.getElementById('active-scene-name');
+        const activeSceneIdEl = document.getElementById('active-scene-id');
         const rtpDisplay = document.getElementById('rtp-display');
         const edgeDisplay = document.getElementById('edge-display');
         const mathStatus = document.getElementById('math-status');
+        const errorLog = document.getElementById('error-log');
         const publishBtn = document.getElementById('publish-btn');
+        const journeyLog = document.getElementById('journey-log');
 
-        // Render Logic Table
-        function renderNodes() {
-            nodeList.innerHTML = "";
-            worldState.paytable.forEach((node) => {
+        // ==========================================
+        // 2. UI RENDERING
+        // ==========================================
+        function renderUI() {
+            renderSceneList();
+            renderActiveScene();
+            calculateGlobalMath();
+        }
+
+        function renderSceneList() {
+            sceneListEl.innerHTML = "";
+            for (const [id, scene] of Object.entries(graph)) {
+                const item = document.createElement('div');
+                item.className = `scene-item ${id === activeSceneId ? 'active' : ''} ${id === 'root' ? 'root' : ''}`;
+                item.innerHTML = `
+                    <span>${id === 'root' ? '🟢' : '📄'} ${scene.name}</span>
+                    ${id !== 'root' ? `<span style="color:#888; font-size:16px;" onclick="deleteScene('${id}', event)">×</span>` : ''}
+                `;
+                item.onclick = () => { activeSceneId = id; renderUI(); };
+                sceneListEl.appendChild(item);
+            }
+        }
+
+        function renderActiveScene() {
+            const scene = graph[activeSceneId];
+            activeSceneNameEl.value = scene.name;
+            activeSceneIdEl.innerText = `ID: ${activeSceneId}`;
+            outcomeListEl.innerHTML = "";
+
+            // Create dropdown options for all scenes (to link to)
+            let sceneOptions = "";
+            for (const id of Object.keys(graph)) {
+                sceneOptions += `<option value="${id}">${graph[id].name} (${id})</option>`;
+            }
+
+            scene.outcomes.forEach(out => {
                 const tr = document.createElement('tr');
                 tr.className = 'node-row';
+                
+                let valueInput = "";
+                if (out.type === "terminal") {
+                    valueInput = `<div style="display:flex; align-items:center;"><input type="number" class="ide-input number" value="${out.value}" step="0.1" min="0" onchange="updateOutcome(${out.id}, 'value', this.value)"><span style="margin-left:5px; color:#888;">x</span></div>`;
+                } else {
+                    valueInput = `<select class="ide-select" onchange="updateOutcome(${out.id}, 'value', this.value)">
+                        <option value="" disabled ${!out.value ? 'selected' : ''}>Select Destination...</option>
+                        ${sceneOptions.replace(`value="${out.value}"`, `value="${out.value}" selected`)}
+                    </select>`;
+                }
+
                 tr.innerHTML = `
-                    <td><input type="text" class="ide-input" value="${node.emoji}" style="text-align:center;" maxlength="2" data-id="${node.id}" data-field="emoji"></td>
-                    <td><input type="text" class="ide-input" value="${node.name}" data-id="${node.id}" data-field="name"></td>
-                    <td><input type="color" value="${node.color}" style="width:100%; height:25px; border:none; background:transparent; cursor:pointer;" data-id="${node.id}" data-field="color"></td>
-                    <td><input type="number" class="ide-input number" value="${node.multiplier}" step="0.1" min="0" data-id="${node.id}" data-field="multiplier"></td>
-                    <td><input type="number" class="ide-input number" value="${node.prob}" step="0.1" min="0" max="100" data-id="${node.id}" data-field="prob"></td>
-                    <td style="text-align: center;"><button class="btn-remove" onclick="removeNode(${node.id})">✖</button></td>
+                    <td><input type="text" class="ide-input" value="${out.name}" onchange="updateOutcome(${out.id}, 'name', this.value)"></td>
+                    <td><div style="display:flex; align-items:center;"><input type="number" class="ide-input number" value="${out.prob}" step="0.1" min="0" max="100" onchange="updateOutcome(${out.id}, 'prob', this.value)"><span style="margin-left:5px; color:#888;">%</span></div></td>
+                    <td>
+                        <select class="ide-select" onchange="updateOutcome(${out.id}, 'type', this.value)">
+                            <option value="terminal" ${out.type === 'terminal' ? 'selected' : ''}>Pay Winnings (Terminal)</option>
+                            <option value="link" ${out.type === 'link' ? 'selected' : ''}>Jump to Scene (Link)</option>
+                        </select>
+                    </td>
+                    <td>${valueInput}</td>
+                    <td style="text-align:center;"><button class="btn-tool" style="background:transparent; color:var(--error-red); border:none;" onclick="deleteOutcome(${out.id})">✖</button></td>
                 `;
-                nodeList.appendChild(tr);
-            });
-            bindNodeInputs();
-            calculateMath();
-        }
-
-        function bindNodeInputs() {
-            document.querySelectorAll('.ide-input, input[type="color"]').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.getAttribute('data-id'));
-                    const field = e.target.getAttribute('data-field');
-                    const value = e.target.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
-                    const node = worldState.paytable.find(n => n.id === id);
-                    if (node) {
-                        node[field] = value;
-                        if (field === 'prob' || field === 'multiplier') calculateMath();
-                    }
-                });
+                outcomeListEl.appendChild(tr);
             });
         }
 
-        document.getElementById('add-node-btn').addEventListener('click', () => {
-            worldState.paytable.push({ id: nodeIdCounter++, emoji: "✨", name: "New Drop", color: "#ffffff", multiplier: 1.0, prob: 0.0 });
-            renderNodes();
-        });
+        // ==========================================
+        // 3. GRAPH MUTATION LOGIC
+        // ==========================================
+        document.getElementById('add-scene-btn').onclick = () => {
+            const id = `scene_${sceneIdCounter++}`;
+            graph[id] = { name: "New Scene", outcomes: [] };
+            activeSceneId = id;
+            renderUI();
+        };
 
-        window.removeNode = function(id) {
-            if (worldState.paytable.length <= 1) return alert("Must have at least one outcome.");
-            worldState.paytable = worldState.paytable.filter(n => n.id !== id);
-            renderNodes();
-        }
-
-        window.autoBalanceChance = function() {
-            let total = worldState.paytable.reduce((sum, node) => sum + node.prob, 0);
-            if (total === 0) return alert("Add some probability before auto-balancing.");
-            worldState.paytable.forEach(node => { node.prob = parseFloat(((node.prob / total) * 100).toFixed(2)); });
-            let newTotal = worldState.paytable.reduce((sum, node) => sum + node.prob, 0);
-            let diff = parseFloat((100 - newTotal).toFixed(2));
-            if (diff !== 0) worldState.paytable[0].prob = parseFloat((worldState.paytable[0].prob + diff).toFixed(2));
-            renderNodes();
-        }
-
-        // RTP Calculator (The Security Lock)
-        function calculateMath() {
-            let totalProb = 0; let rtp = 0;
-            worldState.paytable.forEach(node => {
-                totalProb += node.prob;
-                rtp += (node.prob / 100) * node.multiplier;
-            });
-
-            const p = totalProb.toFixed(2);
-            const r = (rtp * 100).toFixed(2);
+        window.deleteScene = (id, e) => {
+            e.stopPropagation();
+            if (id === 'root') return;
+            delete graph[id];
             
-            probDisplay.innerText = `${p}%`;
-            rtpDisplay.innerText = `${r}%`;
-            edgeDisplay.innerText = `${(100 - (rtp * 100)).toFixed(2)}%`;
+            // Cleanup broken links
+            for (const s of Object.values(graph)) {
+                s.outcomes.forEach(out => { if (out.type === 'link' && out.value === id) out.value = ""; });
+            }
+            if (activeSceneId === id) activeSceneId = 'root';
+            renderUI();
+        };
 
-            if (p !== "100.00") {
-                probDisplay.style.color = "var(--error-red)";
-                mathStatus.className = "status-badge status-error";
-                mathStatus.innerText = "Error: Chance must be exactly 100%";
-                publishBtn.disabled = true;
-            } else if (r > 99.00) {
-                rtpDisplay.style.color = "var(--error-red)";
-                mathStatus.className = "status-badge status-error";
-                mathStatus.innerText = "Error: RTP exceeds 99.00%";
-                publishBtn.disabled = true;
-            } else {
-                probDisplay.style.color = "var(--text-bright)";
+        document.getElementById('add-outcome-btn').onclick = () => {
+            graph[activeSceneId].outcomes.push({ id: outcomeIdCounter++, name: "New Event", prob: 0, type: "terminal", value: 0 });
+            renderUI();
+        };
+
+        window.updateOutcome = (outId, field, val) => {
+            const out = graph[activeSceneId].outcomes.find(o => o.id === outId);
+            if (!out) return;
+            
+            if (field === 'prob' || (field === 'value' && out.type === 'terminal')) out[field] = parseFloat(val) || 0;
+            else out[field] = val;
+
+            // Auto-reset value field when switching types
+            if (field === 'type') out.value = val === 'terminal' ? 0 : "";
+            renderUI();
+        };
+
+        window.deleteOutcome = (outId) => {
+            graph[activeSceneId].outcomes = graph[activeSceneId].outcomes.filter(o => o.id !== outId);
+            renderUI();
+        };
+
+        activeSceneNameEl.onchange = (e) => {
+            graph[activeSceneId].name = e.target.value;
+            renderUI();
+        };
+
+        // ==========================================
+        // 4. RECURSIVE RTP SECURITY ENGINE
+        // ==========================================
+        function calculateGlobalMath() {
+            let errorMsg = null;
+            let isValid = true;
+
+            // Step 1: Ensure every scene has exactly 100% probability total
+            for (const [id, scene] of Object.entries(graph)) {
+                const total = scene.outcomes.reduce((sum, out) => sum + out.prob, 0);
+                if (Math.abs(total - 100) > 0.01) {
+                    isValid = false;
+                    errorMsg = `Scene "${scene.name}" probability total is ${total.toFixed(2)}% (Must be 100%)`;
+                    break;
+                }
+                for (const out of scene.outcomes) {
+                    if (out.type === 'link' && (!out.value || !graph[out.value])) {
+                        isValid = false;
+                        errorMsg = `Scene "${scene.name}" has a broken link.`;
+                        break;
+                    }
+                }
+            }
+
+            // Step 2: Recursive Expected Value (EV) calculation
+            let globalEV = 0;
+            if (isValid) {
+                function calcEV(sceneId, visited) {
+                    if (visited.has(sceneId)) throw new Error(`Infinite Loop Detected involving "${graph[sceneId].name}"`);
+                    visited.add(sceneId);
+
+                    let ev = 0;
+                    for (const out of graph[sceneId].outcomes) {
+                        if (out.type === 'terminal') {
+                            ev += (out.prob / 100) * out.value;
+                        } else if (out.type === 'link') {
+                            ev += (out.prob / 100) * calcEV(out.value, new Set(visited));
+                        }
+                    }
+                    return ev;
+                }
+
+                try {
+                    globalEV = calcEV('root', new Set());
+                    const rtp = globalEV * 100;
+                    
+                    if (rtp > 99.00) {
+                        isValid = false;
+                        errorMsg = `Global RTP exceeds 99.00% (${rtp.toFixed(2)}%)`;
+                    }
+                } catch (e) {
+                    isValid = false;
+                    errorMsg = e.message;
+                }
+            }
+
+            // Update Inspector UI
+            if (isValid) {
+                rtpDisplay.innerText = `${(globalEV * 100).toFixed(2)}%`;
+                edgeDisplay.innerText = `${(100 - (globalEV * 100)).toFixed(2)}%`;
                 rtpDisplay.style.color = "var(--text-bright)";
                 mathStatus.className = "status-badge status-safe";
-                mathStatus.innerText = "Math Verified & Safe";
+                mathStatus.innerText = "Graph Verified: Protocol Safe";
+                errorLog.style.display = "none";
                 publishBtn.disabled = false;
+            } else {
+                rtpDisplay.innerText = "LOCKED";
+                edgeDisplay.innerText = "--";
+                rtpDisplay.style.color = "var(--error-red)";
+                mathStatus.className = "status-badge status-error";
+                mathStatus.innerText = "Graph Validation Failed";
+                errorLog.innerText = errorMsg;
+                errorLog.style.display = "block";
+                publishBtn.disabled = true;
             }
         }
 
-        /* =======================================================
-           2. CANVAS 2D DIORAMA ENGINE
-        ======================================================= */
-        const canvas = document.getElementById('sim-canvas');
-        const ctx = canvas.getContext('2d');
-        let cw, ch;
+        // ==========================================
+        // 5. JOURNEY SIMULATOR (PLAYTEST)
+        // ==========================================
+        window.runSimulation = () => {
+            if (publishBtn.disabled) return alert("Fix graph errors to simulate.");
+            journeyLog.innerHTML = "";
+            simulateScene('root');
+        };
 
-        function resizeCanvas() {
-            cw = canvas.width = canvas.parentElement.clientWidth;
-            ch = canvas.height = canvas.parentElement.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        function simulateScene(sceneId) {
+            const scene = graph[sceneId];
+            
+            // Append Scene Start Log
+            const log = document.createElement('div');
+            log.className = 'log-entry';
+            log.innerHTML = `<div class="log-scene">Arrived at: ${scene.name}</div><div class="log-action" style="color:#888;">Rolling probability...</div>`;
+            journeyLog.appendChild(log);
+            journeyLog.scrollTop = journeyLog.scrollHeight;
 
-        // Canvas State
-        themeSelect.addEventListener('change', (e) => worldState.theme = e.target.value);
-        mechanicSelect.addEventListener('change', (e) => worldState.mechanic = e.target.value);
+            // Artificial suspense delay
+            setTimeout(() => {
+                const roll = Math.random() * 100;
+                let cumulative = 0;
+                let result = scene.outcomes[0];
 
-        // Animation State
-        let isAnimating = false;
-        let animProgress = 0;
-        let playtestResult = null;
-        let particles = [];
-
-        function initParticles(color) {
-            particles = [];
-            for(let i=0; i<30; i++) {
-                particles.push({
-                    x: cw/2, y: ch/2,
-                    vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15,
-                    life: 1.0, color: color
-                });
-            }
-        }
-
-        // Main Render Loop
-        function draw() {
-            ctx.clearRect(0, 0, cw, ch);
-
-            // 1. Draw Theme Background
-            if (worldState.theme === 'space') {
-                ctx.fillStyle = '#050510'; ctx.fillRect(0,0,cw,ch);
-                ctx.fillStyle = '#ffffff';
-                for(let i=0; i<50; i++) {
-                    const x = (Math.sin(i*123 + Date.now()*0.0001) * 0.5 + 0.5) * cw;
-                    const y = (Math.cos(i*321 + Date.now()*0.0001) * 0.5 + 0.5) * ch;
-                    ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI*2); ctx.fill();
+                for (const out of scene.outcomes) {
+                    cumulative += out.prob;
+                    if (roll <= cumulative) { result = out; break; }
                 }
-            } else if (worldState.theme === 'cyber') {
-                ctx.fillStyle = '#0a0014'; ctx.fillRect(0,0,cw,ch);
-                ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)'; ctx.lineWidth = 2;
-                const offset = (Date.now() * 0.05) % 40;
-                for(let i=0; i<cw; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, ch); ctx.stroke(); }
-                for(let i=0; i<ch; i+=40) { ctx.beginPath(); ctx.moveTo(0, i+offset); ctx.lineTo(cw, i+offset); ctx.stroke(); }
-            } else if (worldState.theme === 'mystic') {
-                ctx.fillStyle = '#0f1a1f'; ctx.fillRect(0,0,cw,ch);
-                for(let i=0; i<20; i++) {
-                    const y = ch - ((Date.now()*0.05 + i*50) % ch);
-                    const x = cw/2 + Math.sin(y*0.02 + i)*100;
-                    ctx.fillStyle = `rgba(0, 231, 1, ${y/ch})`;
-                    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill();
+
+                if (result.type === 'terminal') {
+                    log.classList.add('log-terminal');
+                    log.innerHTML = `<div class="log-scene">${scene.name}</div><div class="log-action">Event: ${result.name}</div><div style="margin-top:10px; font-weight:bold; color:var(--accent-green);">Payout: ${result.value}x Wager</div>`;
+                } else {
+                    log.innerHTML = `<div class="log-scene">${scene.name}</div><div class="log-action">Path Chosen: ${result.name}</div><div style="margin-top:5px; font-size:12px; color:var(--accent-blue);">Traveling to next scene...</div>`;
+                    setTimeout(() => simulateScene(result.value), 800);
                 }
-            }
-
-            // 2. Draw Mechanic & Animation
-            ctx.save();
-            ctx.translate(cw/2, ch/2);
-
-            let shakeX = 0, shakeY = 0, scale = 1;
-
-            if (isAnimating) {
-                animProgress += 0.02;
-                if (animProgress < 1.5) {
-                    // Wind up phase
-                    shakeX = (Math.random()-0.5)*10 * animProgress;
-                    shakeY = (Math.random()-0.5)*10 * animProgress;
-                    scale = 1 + Math.sin(animProgress*10)*0.1;
-                } else if (animProgress >= 1.5 && animProgress < 1.6) {
-                    // Explosion Frame
-                    if (particles.length === 0) initParticles(playtestResult.color);
-                    ctx.fillStyle = "white"; ctx.fillRect(-cw/2, -ch/2, cw, ch); // Flash
-                } else if (animProgress > 4.0) {
-                    isAnimating = false; // Reset
-                }
-            }
-
-            // Draw Mechanic Base (if not exploded yet)
-            if (!isAnimating || animProgress < 1.5) {
-                ctx.translate(shakeX, shakeY);
-                ctx.scale(scale, scale);
-                
-                if (worldState.mechanic === 'crate') {
-                    ctx.fillStyle = '#8e44ad'; ctx.fillRect(-40, -40, 80, 80);
-                    ctx.strokeStyle = '#9b59b6'; ctx.lineWidth = 4; ctx.strokeRect(-40, -40, 80, 80);
-                    ctx.fillStyle = '#fff'; ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.fillText('📦', 0, 10);
-                } else if (worldState.mechanic === 'portal') {
-                    ctx.beginPath(); ctx.arc(0, 0, 50 + Math.sin(Date.now()*0.005)*5, 0, Math.PI*2);
-                    ctx.fillStyle = 'rgba(0, 240, 255, 0.2)'; ctx.fill();
-                    ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 4; ctx.stroke();
-                } else if (worldState.mechanic === 'card') {
-                    ctx.fillStyle = '#2c3e50'; ctx.fillRect(-35, -50, 70, 100);
-                    ctx.strokeStyle = '#34495e'; ctx.lineWidth = 2; ctx.strokeRect(-35, -50, 70, 100);
-                }
-            }
-
-            // Draw Explosion Particles & Result
-            if (isAnimating && animProgress >= 1.5) {
-                // Particles
-                particles.forEach(p => {
-                    p.x += p.vx; p.y += p.vy; p.life -= 0.02;
-                    if(p.life > 0) {
-                        ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
-                        ctx.beginPath(); ctx.arc(p.x - cw/2, p.y - ch/2, 4, 0, Math.PI*2); ctx.fill();
-                    }
-                });
-                ctx.globalAlpha = 1.0;
-
-                // Pop-out Result
-                const popScale = Math.min(1, (animProgress - 1.5) * 5);
-                ctx.scale(popScale, popScale);
-                
-                ctx.shadowColor = playtestResult.color; ctx.shadowBlur = 20;
-                ctx.font = '60px Arial'; ctx.textAlign = 'center'; ctx.fillText(playtestResult.emoji, 0, -20);
-                ctx.shadowBlur = 0;
-                
-                ctx.fillStyle = playtestResult.color; ctx.font = 'bold 24px Arial'; ctx.fillText(playtestResult.name.toUpperCase(), 0, 30);
-                ctx.fillStyle = 'white'; ctx.font = '16px Arial'; ctx.fillText(`${playtestResult.multiplier}x PAYOUT`, 0, 60);
-            }
-
-            ctx.restore();
-            requestAnimationFrame(draw);
-        }
-        draw();
-
-        // Run Simulation Button
-        window.triggerPlaytest = function() {
-            if (publishBtn.disabled) return alert("Math error detected. Fix RTP to run simulation.");
-            if (isAnimating) return;
-
-            // Roll Math
-            const roll = Math.random() * 100;
-            let cumulative = 0;
-            playtestResult = worldState.paytable[0];
-            for (const node of worldState.paytable) {
-                cumulative += node.prob;
-                if (roll <= cumulative) { playtestResult = node; break; }
-            }
-
-            // Trigger visual scene
-            animProgress = 0;
-            particles = [];
-            isAnimating = true;
+                journeyLog.scrollTop = journeyLog.scrollHeight;
+            }, 800);
         }
 
-        /* =======================================================
-           3. FIREBASE INTEGRATION & PUBLISHING
-        ======================================================= */
+        // ==========================================
+        // 6. FIREBASE DEPLOYMENT
+        // ==========================================
         async function initFirebase() {
             try {
                 const res = await fetch('/api/config');
@@ -495,39 +478,33 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
                 onAuthStateChanged(auth, user => { activeUser = user; });
-            } catch(e) { console.error("DB Not linked locally"); }
-            renderNodes();
+            } catch(e) { console.log("Local Dev Mode - Firebase not linked."); }
+            renderUI();
         }
 
         publishBtn.addEventListener('click', async () => {
-            const title = document.getElementById('world-title').value.trim() || "My Custom World";
-            if (!activeUser) return alert("Must be logged in to publish.");
-
-            publishBtn.disabled = true; publishBtn.innerText = "Deploying...";
+            if (!activeUser) return alert("Security Error: Not authenticated.");
+            const title = document.getElementById('world-title').value.trim() || "My Graph World";
             
-            try {
-                const cleanPaytable = worldState.paytable.map(n => ({
-                    emoji: n.emoji, name: n.name, color: n.color, multiplier: n.multiplier, prob: n.prob
-                }));
+            publishBtn.disabled = true;
+            publishBtn.innerText = "Deploying Graph...";
 
-                // Push Visuals + Math to the cloud
+            try {
                 await addDoc(collection(db, "games"), {
                     title: title,
-                    type: "rng", // Sandbox engine maps to rng logic on server
-                    theme: worldState.theme,
-                    mechanic: worldState.mechanic,
-                    emoji: cleanPaytable[cleanPaytable.length-1].emoji, // Thumbnail uses top rarity emoji
+                    type: "graph", 
                     creator: activeUser.displayName || activeUser.email.split('@')[0],
                     creatorUid: activeUser.uid,
-                    paytable: cleanPaytable,
+                    graph: graph, // Save entire scene graph structure
                     createdAt: new Date()
                 });
 
                 document.getElementById('save-status').style.display = "inline";
                 setTimeout(() => window.location.href = 'home.html', 1500);
             } catch (error) {
-                alert("Deploy failed.");
-                publishBtn.disabled = false; publishBtn.innerText = "Publish World";
+                alert("Failed to publish world.");
+                publishBtn.disabled = false;
+                publishBtn.innerText = "Publish Graph";
             }
         });
 
