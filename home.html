@@ -64,14 +64,36 @@
 
         /* MODAL (Game Simulator) */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: var(--bg-panel); width: 800px; height: 600px; border-radius: var(--border-radius); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #2a3b47; }
+        .modal-content { background: var(--bg-panel); width: 850px; height: 650px; border-radius: var(--border-radius); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #2a3b47; }
         .modal-header { padding: 15px 20px; background: var(--bg-dark); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3b47; }
         .close-btn { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
-        .game-frame { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b131a; }
-        .game-controls { padding: 20px; background: var(--bg-dark); display: flex; gap: 15px; justify-content: center; border-top: 1px solid #2a3b47; }
-        .bet-input { background: var(--bg-panel); border: 1px solid #2a3b47; color: white; padding: 10px; border-radius: 8px; width: 100px; text-align: center; font-weight: bold; }
-        .btn-bet { background: var(--accent-green); color: var(--bg-dark); border: none; padding: 10px 40px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; }
+        
+        .game-frame { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b131a; position: relative; overflow: hidden; }
+        
+        /* PROVABLY FAIR DRAWER */
+        .provably-fair-box { width: 100%; background: #0b131a; padding: 10px 20px; font-size: 11px; border-top: 1px dashed #2a3b47; display: flex; justify-content: space-between; color: var(--text-muted); }
+        .provably-fair-box span { font-family: monospace; color: var(--accent-green); }
+
+        .game-controls { padding: 20px; background: var(--bg-dark); display: flex; gap: 15px; justify-content: center; align-items: center; border-top: 1px solid #2a3b47; }
+        .bet-input { background: var(--bg-panel); border: 1px solid #2a3b47; color: white; padding: 10px; border-radius: 8px; width: 100px; text-align: center; font-weight: bold; outline: none; }
+        .btn-bet { background: var(--accent-green); color: var(--bg-dark); border: none; padding: 10px 40px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
         .btn-bet:active { transform: scale(0.95); }
+        .btn-bet.cashout-active { background: #ffaa00; color: #000; }
+        .btn-bet:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+        /* MINI-GAME INTERFACES */
+        #crash-interface { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        #crash-multiplier { font-size: 72px; font-weight: 900; color: white; transition: color 0.1s; }
+        #crash-rocket { font-size: 60px; margin-top: 20px; transition: transform 0.1s; }
+
+        #plinko-interface { display: none; width: 100%; height: 100%; justify-content: center; align-items: center; }
+        #plinko-canvas { background: #070d12; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+
+        #rng-interface { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; }
+        .aura-display { font-size: 28px; font-weight: 800; min-height: 40px; margin-top: 15px; letter-spacing: 1px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .aura-rarity { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+
+        #fallback-interface { display: flex; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -159,86 +181,485 @@
         </div>
     </main>
 
+    <!-- GAME MODAL -->
     <div class="modal-overlay" id="gameModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modal-title">Game Title</h3>
                 <button class="close-btn" onclick="closeGame()">×</button>
             </div>
+            
             <div class="game-frame">
-                <h1 style="color: #2a3b47; font-size: 48px; text-transform: uppercase;">BLOKQ Instance</h1>
-                <p style="color: var(--text-muted); margin-top: 10px;">(UGC Canvas Syncing...)</p>
-                <div id="game-result" style="margin-top: 30px; font-size: 24px; font-weight: bold; color: var(--accent-green);"></div>
+                <!-- CRASH GAME -->
+                <div id="crash-interface">
+                    <div id="crash-multiplier">1.00x</div>
+                    <div id="crash-rocket">🚀</div>
+                </div>
+
+                <!-- PLINKO GAME -->
+                <div id="plinko-interface">
+                    <canvas id="plinko-canvas" width="400" height="380"></canvas>
+                </div>
+
+                <!-- SOLS RNG -->
+                <div id="rng-interface">
+                    <h1 style="color: #2a3b47; font-size: 32px;">ROLL AN AURA</h1>
+                    <div class="aura-display" id="aura-output">Click roll to discover...</div>
+                    <div class="aura-rarity" id="aura-rarity-output"></div>
+                </div>
+
+                <!-- FALLBACK GENERIC GAME -->
+                <div id="fallback-interface">
+                    <h1 style="color: #2a3b47; font-size: 44px; text-transform: uppercase;">BLOKQ Instance</h1>
+                    <p style="color: var(--text-muted); margin-top: 10px;">(Standard Probability Node Active)</p>
+                    <div id="game-result" style="margin-top: 30px; font-size: 24px; font-weight: bold; color: var(--accent-green);"></div>
+                </div>
             </div>
+
+            <!-- PROVABLY FAIR VERIFICATION DRAWER -->
+            <div class="provably-fair-box">
+                <div>Server Hash: <span id="pf-server-hash">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span></div>
+                <div>Client Seed: <span id="pf-client-seed">blokq_player_session</span> | Nonce: <span id="pf-nonce">0</span></div>
+            </div>
+
             <div class="game-controls">
                 <input type="number" id="bet-amount" class="bet-input" value="100" min="10">
-                <button class="btn-bet" onclick="placeBet()">Wager BQ</button>
+                <button class="btn-bet" id="main-bet-btn" onclick="handleWager()">Wager BQ</button>
             </div>
         </div>
     </div>
 
     <script>
         let balance = 10000;
+        let activeGameType = "";
+        let nonceCount = 0;
+
+        // Balance Display Elements
         const balanceDisplay = document.getElementById('bq-balance');
         const modal = document.getElementById('gameModal');
         const modalTitle = document.getElementById('modal-title');
-        const resultDisplay = document.getElementById('game-result');
+        const betBtn = document.getElementById('main-bet-btn');
+        const betInput = document.getElementById('bet-amount');
 
-        // Function to update virtual balance with commas
+        // Interface Containers
+        const crashUI = document.getElementById('crash-interface');
+        const plinkoUI = document.getElementById('plinko-interface');
+        const rngUI = document.getElementById('rng-interface');
+        const fallbackUI = document.getElementById('fallback-interface');
+        const fallbackResult = document.getElementById('game-result');
+
+        // Game State Variables
+        let crashActive = false;
+        let crashMultiplier = 1.00;
+        let crashThreshold = 1.00;
+        let crashInterval = null;
+        let originalBet = 0;
+
+        // Plinko Canvas Settings
+        const canvas = document.getElementById('plinko-canvas');
+        const ctx = canvas.getContext('2d');
+        let plinkoActive = false;
+
+        // Function to update virtual balance
         function updateBalance(amount) {
             balanceDisplay.innerText = amount.toLocaleString();
         }
 
-        // Open the fake game overlay
+        // Open Game and trigger specific visual interface setups
         function openGame(gameName) {
             modalTitle.innerText = gameName;
-            resultDisplay.innerText = "";
             modal.style.display = 'flex';
+            resetAllInterfaces();
+            generateNewServerHash();
+
+            if (gameName === 'Galactic Crash') {
+                activeGameType = "crash";
+                crashUI.style.display = "flex";
+                document.getElementById('crash-multiplier').innerText = "1.00x";
+                document.getElementById('crash-multiplier').style.color = "white";
+                document.getElementById('crash-rocket').style.transform = "translate(0, 0) scale(1)";
+                document.getElementById('crash-rocket').innerText = "🚀";
+                betBtn.innerText = "Launch Rocket";
+            } else if (gameName === 'Neon Plinko') {
+                activeGameType = "plinko";
+                plinkoUI.style.display = "flex";
+                drawPlinkoBoard();
+                betBtn.innerText = "Drop Plinko Ball";
+            } else if (gameName === 'Sols RNG: Reborn') {
+                activeGameType = "rng";
+                rngUI.style.display = "flex";
+                document.getElementById('aura-output').innerText = "Roll for an Aura!";
+                document.getElementById('aura-output').style.color = "white";
+                document.getElementById('aura-rarity-output').innerText = "";
+                betBtn.innerText = "Roll Aura (100 BQ)";
+                betInput.value = 100;
+                betInput.disabled = true;
+            } else {
+                activeGameType = "fallback";
+                fallbackUI.style.display = "flex";
+                fallbackResult.innerText = "";
+                betBtn.innerText = "Wager BQ";
+                betInput.disabled = false;
+            }
         }
 
-        // Close the game overlay
         function closeGame() {
             modal.style.display = 'none';
+            // Force terminate any runaway crash games
+            if (crashActive) {
+                clearInterval(crashInterval);
+                crashActive = false;
+            }
+            betInput.disabled = false;
         }
 
-        // Simulate a "Bet" or "Roll" inside a BLOKQ user-created game
-        function placeBet() {
-            const betInput = document.getElementById('bet-amount').value;
-            const bet = parseInt(betInput);
+        function resetAllInterfaces() {
+            crashUI.style.display = "none";
+            plinkoUI.style.display = "none";
+            rngUI.style.display = "none";
+            fallbackUI.style.display = "none";
+            betBtn.disabled = false;
+            betBtn.className = "btn-bet";
+            betInput.disabled = false;
+        }
 
-            if (isNaN(bet) || bet <= 0) {
+        // Generate a fake SHA-256 for the Provably Fair UI
+        function generateNewServerHash() {
+            nonceCount++;
+            document.getElementById('pf-nonce').innerText = nonceCount;
+            const hexChars = "0123456789abcdef";
+            let fakeHash = "";
+            for (let i = 0; i < 64; i++) {
+                fakeHash += hexChars[Math.floor(Math.random() * 16)];
+            }
+            document.getElementById('pf-server-hash').innerText = fakeHash;
+        }
+
+        // ROUTE WAGERS TO SPECIFIC GAME ENGINES
+        function handleWager() {
+            const betValue = parseInt(betInput.value);
+
+            if (isNaN(betValue) || betValue <= 0) {
                 alert("Please enter a valid amount of BQ Tokens.");
                 return;
             }
 
-            if (bet > balance) {
+            if (betValue > balance && !crashActive) {
                 alert("Insufficient BQ Balance!");
                 return;
             }
 
-            // Deduct bet
+            generateNewServerHash();
+
+            if (activeGameType === "crash") {
+                runCrashGame(betValue);
+            } else if (activeGameType === "plinko") {
+                runPlinkoGame(betValue);
+            } else if (activeGameType === "rng") {
+                runRngGame(betValue);
+            } else {
+                runStandardFallback(betValue);
+            }
+        }
+
+        /* ==========================================================
+           1. GALACTIC CRASH LOGIC (INTERACTIVE RUNTIME)
+        ========================================================== */
+        function runCrashGame(bet) {
+            if (!crashActive) {
+                // STARTING GAME
+                balance -= bet;
+                updateBalance(balance);
+                originalBet = bet;
+                crashActive = true;
+                crashMultiplier = 1.00;
+                betInput.disabled = true;
+
+                // Determine crash point using basic crash distribution formula
+                // 3% instant crash at 1.00x, otherwise weighted scale
+                const isInstantCrash = Math.random() < 0.03;
+                if (isInstantCrash) {
+                    crashThreshold = 1.00;
+                } else {
+                    const e = Math.random();
+                    crashThreshold = parseFloat((0.99 / (1 - e)).toFixed(2));
+                    // Cap max prototype crash at 15x for visual pacing
+                    if (crashThreshold > 15) crashThreshold = parseFloat((10 + Math.random() * 5).toFixed(2));
+                }
+
+                betBtn.innerText = "CASH OUT @ 1.00x";
+                betBtn.className = "btn-bet cashout-active";
+
+                document.getElementById('crash-multiplier').style.color = "white";
+                document.getElementById('crash-rocket').style.transform = "translate(0, 0) scale(1)";
+                document.getElementById('crash-rocket').innerText = "🚀";
+
+                let speed = 80; // refresh speed in ms
+
+                crashInterval = setInterval(() => {
+                    crashMultiplier = parseFloat((crashMultiplier + 0.01 + (crashMultiplier * 0.005)).toFixed(2));
+                    document.getElementById('crash-multiplier').innerText = `${crashMultiplier.toFixed(2)}x`;
+                    
+                    // Simple shake & lift animation on rocket
+                    const shakeX = (Math.random() - 0.5) * 6;
+                    const shakeY = (Math.random() - 0.5) * 6 - (crashMultiplier * 2);
+                    document.getElementById('crash-rocket').style.transform = `translate(${shakeX}px, ${shakeY}px) scale(${1 + (crashMultiplier * 0.01)})`;
+
+                    // Check if rocket crashed
+                    if (crashMultiplier >= crashThreshold) {
+                        clearInterval(crashInterval);
+                        crashActive = false;
+                        document.getElementById('crash-multiplier').innerText = "CRASHED! 💥";
+                        document.getElementById('crash-multiplier').style.color = "#ff4d4d";
+                        document.getElementById('crash-rocket').innerText = "💥";
+                        document.getElementById('crash-rocket').style.transform = "scale(2.5)";
+                        
+                        // Reset button
+                        betBtn.innerText = "Launch Rocket";
+                        betBtn.className = "btn-bet";
+                        betInput.disabled = false;
+                    } else {
+                        betBtn.innerText = `CASH OUT @ ${crashMultiplier.toFixed(2)}x`;
+                    }
+                }, speed);
+
+            } else {
+                // CASH OUT TRIGGERED
+                clearInterval(crashInterval);
+                crashActive = false;
+                
+                const winnings = Math.floor(originalBet * crashMultiplier);
+                balance += winnings;
+                updateBalance(balance);
+
+                document.getElementById('crash-multiplier').style.color = "var(--accent-green)";
+                document.getElementById('crash-multiplier').innerText = `SUCCESS! Cashed @ ${crashMultiplier.toFixed(2)}x`;
+                document.getElementById('crash-rocket').innerText = "🛰️";
+                
+                // Reset buttons
+                betBtn.innerText = "Launch Rocket";
+                betBtn.className = "btn-bet";
+                betInput.disabled = false;
+            }
+        }
+
+        /* ==========================================================
+           2. NEON PLINKO LOGIC (CANVAS PHYSICAL ENGINE)
+        ========================================================== */
+        const rows = 8;
+        const pins = [];
+        const pinRadius = 4;
+        const spacingX = 32;
+        const spacingY = 32;
+        const startX = 200;
+        const startY = 40;
+        const multipliers = [8.0, 3.0, 1.2, 0.5, 0.2, 0.5, 1.2, 3.0, 8.0];
+
+        // Build stable Plinko grid
+        for (let r = 0; r < rows; r++) {
+            const rowPins = r + 3; 
+            const rowWidth = (rowPins - 1) * spacingX;
+            const xOffset = startX - (rowWidth / 2);
+            for (let p = 0; p < rowPins; p++) {
+                pins.push({
+                    x: xOffset + (p * spacingX),
+                    y: startY + (r * spacingY)
+                });
+            }
+        }
+
+        function drawPlinkoBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Pegs
+            ctx.fillStyle = "#2a3b47";
+            pins.forEach(pin => {
+                ctx.beginPath();
+                ctx.arc(pin.x, pin.y, pinRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Multipliers Slots at Bottom
+            const finalY = startY + (rows * spacingY) + 10;
+            const totalBuckets = multipliers.length;
+            const bucketWidth = 36;
+            const bucketOffset = startX - ((totalBuckets * bucketWidth) / 2);
+
+            for (let i = 0; i < totalBuckets; i++) {
+                const bx = bucketOffset + (i * bucketWidth);
+                ctx.fillStyle = multipliers[i] >= 1.0 ? "rgba(0, 231, 1, 0.15)" : "rgba(255, 77, 77, 0.15)";
+                ctx.strokeStyle = multipliers[i] >= 1.0 ? "var(--accent-green)" : "#ff4d4d";
+                ctx.lineWidth = 1;
+                ctx.fillRect(bx + 2, finalY, bucketWidth - 4, 25);
+                ctx.strokeRect(bx + 2, finalY, bucketWidth - 4, 25);
+
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 10px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(`${multipliers[i]}x`, bx + (bucketWidth / 2), finalY + 16);
+            }
+        }
+
+        function runPlinkoGame(bet) {
+            if (plinkoActive) return; // Wait until active ball resolves
+            plinkoActive = true;
+            betBtn.disabled = true;
+            betInput.disabled = true;
+
             balance -= bet;
             updateBalance(balance);
-            resultDisplay.style.color = "white";
-            resultDisplay.innerText = "Processing Logic...";
 
-            // Simulate game outcome after 1 second
+            let bx = startX + (Math.random() - 0.5) * 6; // Start slightly random at top
+            let by = 15;
+            let vx = 0;
+            let vy = 2.5;
+            const gravity = 0.12;
+
+            function animateBall() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawPlinkoBoard();
+
+                // Apply simple gravity
+                vy += gravity;
+                bx += vx;
+                by += vy;
+
+                // Simple collision detection with pins
+                pins.forEach(pin => {
+                    const dx = bx - pin.x;
+                    const dy = by - pin.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = pinRadius + 6; // ball radius is 6
+
+                    if (distance < minDist) {
+                        // Push out
+                        const angle = Math.atan2(dy, dx);
+                        bx = pin.x + Math.cos(angle) * minDist;
+                        by = pin.y + Math.sin(angle) * minDist;
+
+                        // Deflect ball physics
+                        const velocity = Math.sqrt(vx * vx + vy * vy) * 0.75; // Dampen velocity bounce
+                        vx = Math.cos(angle) * velocity + (Math.random() - 0.5) * 0.5;
+                        vy = Math.sin(angle) * velocity;
+                    }
+                });
+
+                // Render active glowing ball
+                ctx.beginPath();
+                ctx.arc(bx, by, 7, 0, Math.PI * 2);
+                ctx.fillStyle = "var(--accent-green)";
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "var(--accent-green)";
+                ctx.fill();
+                ctx.shadowBlur = 0; // reset shadow
+
+                const finalY = startY + (rows * spacingY) + 10;
+                if (by >= finalY) {
+                    // Ball landed inside slot
+                    const totalBuckets = multipliers.length;
+                    const bucketWidth = 36;
+                    const bucketOffset = startX - ((totalBuckets * bucketWidth) / 2);
+                    
+                    let landingIndex = Math.floor((bx - bucketOffset) / bucketWidth);
+                    if (landingIndex < 0) landingIndex = 0;
+                    if (landingIndex >= totalBuckets) landingIndex = totalBuckets - 1;
+
+                    const finalMultiplier = multipliers[landingIndex];
+                    const payout = Math.floor(bet * finalMultiplier);
+                    
+                    balance += payout;
+                    updateBalance(balance);
+                    
+                    plinkoActive = false;
+                    betBtn.disabled = false;
+                    betInput.disabled = false;
+                } else {
+                    requestAnimationFrame(animateBall);
+                }
+            }
+
+            animateBall();
+        }
+
+        /* ==========================================================
+           3. SOLS RNG: REBORN (AURA ROLLER LOGIC)
+        ========================================================== */
+        const auras = [
+            { name: "Common", rarity: "1 in 2", bonus: 0.2, color: "#b0bec5" },
+            { name: "Uncommon", rarity: "1 in 5", bonus: 0.5, color: "#9ccc65" },
+            { name: "Rare", rarity: "1 in 15", bonus: 1.5, color: "#29b6f6" },
+            { name: "Epic", rarity: "1 in 80", bonus: 4.0, color: "#ab47bc" },
+            { name: "Legendary", rarity: "1 in 500", bonus: 15.0, color: "#ffca28" },
+            { name: "Mythical", rarity: "1 in 2,500", bonus: 50.0, color: "#ff7043" },
+            { name: "GALACTIC", rarity: "1 in 10,000", bonus: 500.0, color: "#00e701" }
+        ];
+
+        function runRngGame(bet) {
+            // Sols RNG has flat roll price of 100 BQ in prototype
+            const cost = 100;
+            if (balance < cost) {
+                alert("Insufficient BQ Balance to Roll!");
+                return;
+            }
+            balance -= cost;
+            updateBalance(balance);
+
+            betBtn.disabled = true;
+            const output = document.getElementById('aura-output');
+            const rarityOutput = document.getElementById('aura-rarity-output');
+
+            output.style.color = "white";
+            output.innerText = "🌌 Aligning Constellations...";
+            rarityOutput.innerText = "";
+
             setTimeout(() => {
-                const win = Math.random() > 0.5; // 50/50 chance for the prototype
-                
+                // Cryptographically weighted random rolling
+                const roll = Math.random();
+                let chosenAura = auras[0]; // fallback Common
+
+                if (roll <= 0.0001) chosenAura = auras[6];       // GALACTIC (1 in 10,000)
+                else if (roll <= 0.0004) chosenAura = auras[5];  // Mythical (1 in 2,500)
+                else if (roll <= 0.002) chosenAura = auras[4];   // Legendary (1 in 500)
+                else if (roll <= 0.0125) chosenAura = auras[3];  // Epic (1 in 80)
+                else if (roll <= 0.066) chosenAura = auras[2];   // Rare (1 in 15)
+                else if (roll <= 0.2) chosenAura = auras[1];     // Uncommon (1 in 5)
+
+                output.innerText = chosenAura.name.toUpperCase();
+                output.style.color = chosenAura.color;
+                output.style.textShadow = `0 0 15px ${chosenAura.color}`;
+                rarityOutput.innerText = `Rarity Factor: ${chosenAura.rarity} | Winnings: +${cost * chosenAura.bonus} BQ`;
+
+                balance += Math.floor(cost * chosenAura.bonus);
+                updateBalance(balance);
+                betBtn.disabled = false;
+            }, 800);
+        }
+
+        /* ==========================================================
+           4. STANDARD PROTOCOL NODE (FALLBACK PROTOTYPE ENGINE)
+        ========================================================== */
+        function runStandardFallback(bet) {
+            balance -= bet;
+            updateBalance(balance);
+            fallbackResult.style.color = "white";
+            fallbackResult.innerText = "Processing Logic...";
+            betBtn.disabled = true;
+
+            setTimeout(() => {
+                const win = Math.random() > 0.5; // Default 50/50 seed check
                 if (win) {
                     const winnings = bet * 2;
                     balance += winnings;
-                    resultDisplay.style.color = "var(--accent-green)";
-                    resultDisplay.innerText = `Success! +${winnings} BQ minted 🎉`;
+                    fallbackResult.style.color = "var(--accent-green)";
+                    fallbackResult.innerText = `Success! +${winnings} BQ minted 🎉`;
                 } else {
-                    resultDisplay.style.color = "#ff4d4d";
-                    resultDisplay.innerText = `Defeat. -${bet} BQ burned.`;
+                    fallbackResult.style.color = "#ff4d4d";
+                    fallbackResult.innerText = `Defeat. -${bet} BQ burned.`;
                 }
                 updateBalance(balance);
+                betBtn.disabled = false;
             }, 1000);
         }
     </script>
-
 </body>
 </html>
