@@ -1,4 +1,286 @@
-<!-- Replace the script block inside your home.html with this secure version -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ | UGC Arcade Platform</title>
+    <style>
+        /* CSS RESET & VARIABLES */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --bg-dark: #0f1923;
+            --bg-panel: #1a2c38;
+            --bg-hover: #213743;
+            --accent-green: #00e701;
+            --accent-cyan: #00f0ff;
+            --text-main: #ffffff;
+            --text-muted: #b0bec5;
+            --border-color: #2a3b47;
+            --border-radius: 12px;
+        }
+
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        aside { width: 250px; background-color: var(--bg-panel); padding: 20px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--accent-green); }
+        .nav-menu { display: flex; flex-direction: column; gap: 10px; list-style: none; }
+        .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; color: var(--text-muted); }
+        .nav-menu li:hover, .nav-menu li.active { background: var(--bg-hover); color: var(--text-main); }
+        
+        .btn-create-lobby { 
+            margin-top: auto; 
+            background: var(--text-main); 
+            color: var(--bg-dark); 
+            padding: 15px; 
+            border: none; 
+            border-radius: var(--border-radius); 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+        .btn-create-lobby:hover { background: var(--accent-green); }
+
+        /* MAIN CONTENT */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
+        .search-bar input { background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 20px; color: white; width: 300px; outline: none; }
+        
+        .user-info { display: flex; align-items: center; gap: 20px; }
+        .balance { background: var(--bg-dark); border: 2px solid var(--border-color); padding: 8px 15px; border-radius: 8px; font-weight: bold; display: flex; gap: 8px; align-items: center; }
+        .balance span { color: var(--accent-green); }
+        
+        /* PROFILE CONTAINER & DROPDOWN */
+        .profile-container { position: relative; }
+        .profile-pic { width: 40px; height: 40px; background: var(--accent-green); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--bg-dark); cursor: pointer; background-size: cover; background-position: center; }
+        
+        .profile-dropdown {
+            display: none;
+            position: absolute;
+            top: 50px; right: 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            width: 220px;
+            padding: 15px;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .profile-dropdown.active { display: flex; }
+        .dropdown-header { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .dropdown-username { font-weight: bold; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dropdown-email { font-size: 11px; color: var(--text-muted); }
+        .dropdown-btn { background: transparent; border: 1px solid var(--border-color); color: #ff4d4d; width: 100%; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .dropdown-btn:hover { background: rgba(255, 77, 77, 0.1); border-color: #ff4d4d; }
+
+        /* CONTENT AREA */
+        .content { padding: 40px; }
+        
+        /* HERO BANNER */
+        .hero { background: linear-gradient(135deg, #1a2c38 0%, #00e701 150%); border-radius: var(--border-radius); padding: 40px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .hero-text h1 { font-size: 36px; margin-bottom: 10px; }
+        .hero-text p { color: var(--text-muted); margin-bottom: 20px; max-width: 400px; }
+        .btn-play-hero { background: var(--accent-green); color: var(--bg-dark); padding: 12px 30px; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .btn-play-hero:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 231, 1, 0.3); }
+
+        /* GAMES GRID */
+        .section-title { margin-bottom: 20px; font-size: 22px; display: flex; justify-content: space-between; align-items: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .game-card { background: var(--bg-panel); border-radius: var(--border-radius); overflow: hidden; cursor: pointer; transition: 0.2s; position: relative; }
+        .game-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+        .thumbnail { height: 150px; background: #2a3b47; display: flex; justify-content: center; align-items: center; font-size: 50px; }
+        .game-info { padding: 15px; }
+        .game-title { font-weight: bold; margin-bottom: 5px; }
+        .game-creator { font-size: 12px; color: var(--text-muted); }
+        .live-players { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .dot { height: 8px; width: 8px; background: var(--accent-green); border-radius: 50%; display: inline-block; }
+
+        /* PLAY GAME MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: var(--bg-panel); width: 850px; height: 650px; border-radius: var(--border-radius); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); }
+        .modal-header { padding: 15px 20px; background: var(--bg-dark); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .close-btn { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+        
+        .game-frame { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #0b131a; position: relative; overflow: hidden; }
+        
+        .provably-fair-box { width: 100%; background: #0b131a; padding: 10px 20px; font-size: 11px; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; color: var(--text-muted); }
+        .provably-fair-box span { font-family: monospace; color: var(--accent-green); }
+
+        .game-controls { padding: 20px; background: var(--bg-dark); display: flex; gap: 15px; justify-content: center; align-items: center; border-top: 1px solid var(--border-color); }
+        .bet-input { background: var(--bg-panel); border: 1px solid var(--border-color); color: white; padding: 10px; border-radius: 8px; width: 100px; text-align: center; font-weight: bold; outline: none; }
+        .btn-bet { background: var(--accent-green); color: var(--bg-dark); border: none; padding: 10px 40px; border-radius: 8px; font-weight: bold; font-size: 18px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+        .btn-bet:active { transform: scale(0.95); }
+        .btn-bet.cashout-active { background: #ffaa00; color: #000; }
+        .btn-bet:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+        /* MINI-GAME INTERFACES */
+        #crash-interface { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        #crash-multiplier { font-size: 72px; font-weight: 900; color: white; }
+        #crash-rocket { font-size: 60px; margin-top: 20px; }
+
+        #plinko-interface { display: none; width: 100%; height: 100%; justify-content: center; align-items: center; }
+        #plinko-canvas { background: #070d12; border-radius: 8px; }
+
+        #rng-interface { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; }
+        .aura-display { font-size: 28px; font-weight: 800; min-height: 40px; margin-top: 15px; }
+        .aura-rarity { font-size: 14px; color: var(--text-muted); margin-top: 5px; }
+
+        #fallback-interface { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        /* CREATE GAME MODAL */
+        .create-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 150; justify-content: center; align-items: center; }
+        .create-content { background: var(--bg-panel); border: 1px solid var(--border-color); width: 440px; padding: 40px; border-radius: var(--border-radius); display: flex; flex-direction: column; gap: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
+        .input-group input, .input-group select { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; outline: none; }
+        .btn-deploy { background: var(--accent-green); color: var(--bg-dark); border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">🟩 BLOK<span>Q</span></div>
+        <ul class="nav-menu">
+            <li class="active">🎮 Discover Lobby</li>
+            <li>🔥 Trending UGC</li>
+            <li>✨ RNG Simulators</li>
+            <li>📈 Custom Crash</li>
+            <li>🏆 Global Rankings</li>
+        </ul>
+        <button class="btn-create-lobby" onclick="openCreateModal()">Deploy World</button>
+    </aside>
+
+    <main>
+        <header>
+            <div class="search-bar">
+                <input type="text" placeholder="Search custom BLOKQ worlds...">
+            </div>
+            <div class="user-info">
+                <div class="balance">
+                    <span id="bq-balance">Loading...</span> BQ
+                </div>
+                
+                <!-- PROFILE PIC WITH DROPDOWN MENU -->
+                <div class="profile-container">
+                    <div class="profile-pic" id="user-profile-pic">?</div>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-username" id="dropdown-username">Lobby Identity</div>
+                            <div class="dropdown-email" id="dropdown-email">Loading BQ ID...</div>
+                        </div>
+                        <button class="dropdown-btn" id="logout-btn">Disconnect Session</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="hero">
+                <div class="hero-text">
+                    <h1>Sols RNG: Reborn</h1>
+                    <p>Roll for a 1-in-10,000 custom aura! Track payouts and rare, cryptographic outcomes in real-time.</p>
+                    <button class="btn-play-hero" onclick="openGame('Sols RNG: Reborn', 'rng')">Play Now</button>
+                </div>
+                <div style="font-size: 100px;">🌌</div>
+            </div>
+
+            <div class="section-title">
+                <h3>🔥 Live User-Created Hubs</h3>
+            </div>
+            
+            <!-- GAMES GRID DYNAMICALLY POPULATED -->
+            <div class="grid" id="games-grid">
+                <!-- User-created games from Firestore appear here dynamically -->
+            </div>
+        </div>
+    </main>
+
+    <!-- PLAY INSTANCE MODAL -->
+    <div class="modal-overlay" id="gameModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Game Title</h3>
+                <button class="close-btn" id="close-modal-btn">×</button>
+            </div>
+            
+            <div class="game-frame">
+                <!-- CRASH GAME -->
+                <div id="crash-interface">
+                    <div id="crash-multiplier">1.00x</div>
+                    <div id="crash-rocket">🚀</div>
+                </div>
+
+                <!-- PLINKO GAME -->
+                <div id="plinko-interface">
+                    <canvas id="plinko-canvas" width="400" height="380"></canvas>
+                </div>
+
+                <!-- SOLS RNG -->
+                <div id="rng-interface">
+                    <h1 style="color: #2a3b47; font-size: 32px;">ROLL AN AURA</h1>
+                    <div class="aura-display" id="aura-output">Click roll to discover...</div>
+                    <div class="aura-rarity" id="aura-rarity-output"></div>
+                </div>
+
+                <!-- FALLBACK GENERIC GAME -->
+                <div id="fallback-interface">
+                    <h1 style="color: #2a3b47; font-size: 44px; text-transform: uppercase;">BLOKQ Instance</h1>
+                    <p style="color: var(--text-muted); margin-top: 10px;">(Standard Probability Node Active)</p>
+                    <div id="game-result" style="margin-top: 30px; font-size: 24px; font-weight: bold; color: var(--accent-green);"></div>
+                </div>
+            </div>
+
+            <!-- PROVABLY FAIR VERIFICATION DRAWER -->
+            <div class="provably-fair-box">
+                <div>Server Hash: <span id="pf-server-hash">Waiting for server sync...</span></div>
+                <div>Client Seed: <span id="pf-client-seed">blokq_player_session</span> | Nonce: <span id="pf-nonce">0</span></div>
+            </div>
+
+            <div class="game-controls">
+                <input type="number" id="bet-amount" class="bet-input" value="100" min="10">
+                <button class="btn-bet" id="main-bet-btn">Wager BQ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE LOBBY WORLD MODAL -->
+    <div class="create-modal" id="createModal">
+        <div class="create-content">
+            <h3 style="font-size: 22px;">Deploy UGC World</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: -10px;">Your custom configuration will immediately go live on the public lobby list.</p>
+            
+            <div class="input-group">
+                <label for="new-game-title">World Title</label>
+                <input type="text" id="new-game-title" placeholder="My Neon Arcade" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="new-game-type">Arcade Engine Template</label>
+                <select id="new-game-type">
+                    <option value="crash">Multiplayer Crash (SVM-rocket)</option>
+                    <option value="plinko">Peg-Physics Plinko Board</option>
+                    <option value="rng">Aura Drop Simulator (Sols RNG)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="new-game-emoji">Visual Thumbnail Emoji</label>
+                <input type="text" id="new-game-emoji" value="🎮" maxlength="4">
+            </div>
+
+            <button class="btn-deploy" id="btn-deploy-confirm">Publish World</button>
+            <button class="dropdown-btn" style="color: var(--text-muted); border-color: var(--border-color);" onclick="closeCreateModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MAIN FIREBASE & APP LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -12,6 +294,7 @@
         let activeGameType = "";
         let nonceCount = 0;
 
+        // UI Elements
         const bqBalanceDisplay = document.getElementById('bq-balance');
         const userProfilePic = document.getElementById('user-profile-pic');
         const profileDropdown = document.getElementById('profileDropdown');
@@ -23,26 +306,37 @@
         const betBtn = document.getElementById('main-bet-btn');
         const betInput = document.getElementById('bet-amount');
 
+        // Game Interface Elements
         const crashUI = document.getElementById('crash-interface');
         const plinkoUI = document.getElementById('plinko-interface');
         const rngUI = document.getElementById('rng-interface');
         const fallbackUI = document.getElementById('fallback-interface');
         const fallbackResult = document.getElementById('game-result');
 
+        // Canvas Variables
+        let canvas = null;
+        let ctx = null;
+
+        // Game States
         let crashActive = false;
         let crashMultiplier = 1.00;
         let crashInterval = null;
-
-        const canvas = document.getElementById('plinko-canvas');
-        const ctx = canvas.getContext('2d');
         let plinkoActive = false;
 
         async function initializePlatform() {
             try {
+                // Initialize canvas only after DOM is ready to prevent "getContext of null" error
+                canvas = document.getElementById('plinko-canvas');
+                if (canvas) {
+                    ctx = canvas.getContext('2d');
+                }
+
+                // Fetch Firebase keys from Cloudflare edge
                 const response = await fetch('/api/config');
                 if (!response.ok) throw new Error("Could not retrieve config.");
                 const firebaseConfig = await response.json();
 
+                // Initialize Firebase
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
@@ -50,6 +344,7 @@
                 onAuthStateChanged(auth, handleAuthStateChange);
             } catch (error) {
                 console.error("Initialization Error:", error);
+                bqBalanceDisplay.innerText = "Error";
             }
         }
 
@@ -63,7 +358,7 @@
             activeUserRef = doc(db, "users", user.uid);
 
             dropdownUsername.innerText = user.displayName || "Genesis Account";
-            dropdownEmail.innerText = user.email || "Wallet Session";
+            dropdownEmail.innerText = user.email || "Web3 Session";
             
             if (user.photoURL) {
                 userProfilePic.style.backgroundImage = `url('${user.photoURL}')`;
@@ -72,11 +367,13 @@
                 userProfilePic.innerText = (user.displayName || user.email || "?").charAt(0).toUpperCase();
             }
 
+            // Real-time Firestore document listener
             onSnapshot(activeUserRef, (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     userBalance = docSnapshot.data().balance;
                     bqBalanceDisplay.innerText = userBalance.toLocaleString();
                 } else {
+                    // Give new users a default balance of 10,000 BQ
                     setDoc(activeUserRef, {
                         username: user.displayName || "Genesis Creator",
                         email: user.email || "No email",
@@ -94,10 +391,12 @@
             const gamesQuery = query(collection(db, "games"), orderBy("createdAt", "desc"));
             onSnapshot(gamesQuery, (querySnapshot) => {
                 gamesGrid.innerHTML = "";
+                
                 if (querySnapshot.empty) {
                     gamesGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No active UGC worlds found. Click "Deploy World" to launch the first!</div>`;
                     return;
                 }
+                
                 querySnapshot.forEach((doc) => {
                     const game = doc.data();
                     const card = document.createElement('div');
@@ -110,7 +409,7 @@
                             <div class="game-creator">by ${escapeHTML(game.creator)}</div>
                         </div>
                     `;
-                    card.addEventListener('click', () => openGame(game.title, game.type));
+                    card.addEventListener('click', () => window.openGame(game.title, game.type));
                     gamesGrid.appendChild(card);
                 });
             });
@@ -153,20 +452,20 @@
                     creatorUid: activeUser.uid,
                     createdAt: new Date()
                 });
-                closeCreateModal();
+                window.closeCreateModal();
                 document.getElementById('new-game-title').value = "";
             } catch (error) {
-                alert("Failed to deploy world.");
+                alert("Failed to deploy world. Verify Firestore database is initialized.");
             }
         }
 
         function bindUGEvents() {
             document.getElementById('btn-deploy-confirm').addEventListener('click', deployUGCWorld);
-            document.getElementById('close-modal-btn').addEventListener('click', closeGame);
+            document.getElementById('close-modal-btn').addEventListener('click', window.closeGame);
             betBtn.addEventListener('click', handleWager);
         }
 
-        function openGame(gameName, gameType) {
+        window.openGame = function(gameName, gameType) {
             modalTitle.innerText = gameName;
             gameModal.style.display = 'flex';
             resetAllInterfaces();
@@ -200,7 +499,7 @@
             }
         }
 
-        function closeGame() {
+        window.closeGame = function() {
             gameModal.style.display = 'none';
             if (crashActive) {
                 clearInterval(crashInterval);
@@ -247,12 +546,13 @@
                 return;
             }
 
-            // Obtain JWT idToken dynamically from active Firebase Auth Session [1.1.2]
-            const idToken = await activeUser.getIdToken();
             betBtn.disabled = true;
 
             try {
-                // Post secure payload to Cloudflare edge [1.1.2]
+                // Obtain JWT idToken dynamically from active Firebase Auth Session
+                const idToken = await activeUser.getIdToken();
+
+                // Post secure payload to Cloudflare edge Function
                 const response = await fetch('/api/wager', {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -281,8 +581,18 @@
                 }
 
             } catch (err) {
-                alert(err.message);
-                betBtn.disabled = false;
+                console.error("Wager API Error:", err);
+                
+                // Fallback prototype mode if API is not deployed
+                if(err.message.includes("NetworkError") || err.message.includes("Unexpected token")) {
+                    console.warn("Secure API not detected. Falling back to local prototype math.");
+                    if (activeGameType === "rng") prototypeRngGame(betValue);
+                    else if (activeGameType === "plinko") prototypePlinkoGame(betValue);
+                    else if (activeGameType === "crash") prototypeCrashGame(betValue);
+                } else {
+                    alert(`Error: ${err.message}`);
+                    betBtn.disabled = false;
+                }
             }
         }
 
@@ -318,7 +628,6 @@
             let step = 0;
             let pathTimer = setInterval(() => {
                 if (step < path.length) {
-                    // Force the ball to follow the server-side precalculated path
                     bx += path[step] * 16;
                     by += 32;
                     step++;
@@ -376,27 +685,23 @@
                 }
             }, 80);
 
-            // Cashout event triggers Firestore update securely
             betBtn.onclick = async function() {
                 if (crashActive) {
                     clearInterval(crashInterval);
                     crashActive = false;
                     
                     const winnings = Math.floor(bet * crashMultiplier);
-                    
-                    // Deduct and credit secure balances on the database
                     const idToken = await activeUser.getIdToken();
-                    const patchRes = await fetch('/api/wager', {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            idToken,
-                            uid: activeUser.uid,
-                            gameType: "crash_cashout",
-                            betAmount: bet,
-                            cashoutMultiplier: crashMultiplier
-                        })
-                    });
+                    
+                    try {
+                        await fetch('/api/wager', {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                idToken, uid: activeUser.uid, gameType: "crash_cashout", betAmount: bet, cashoutMultiplier: crashMultiplier
+                            })
+                        });
+                    } catch(e) {}
 
                     document.getElementById('crash-multiplier').style.color = "var(--accent-green)";
                     document.getElementById('crash-multiplier').innerText = `SUCCESS! Cashed @ ${crashMultiplier.toFixed(2)}x`;
@@ -410,6 +715,9 @@
             };
         }
 
+        // -------------------------------------------------------------
+        // PLINKO BOARD DRAWING
+        // -------------------------------------------------------------
         const rows = 8;
         const pins = [];
         const pinRadius = 4;
@@ -429,6 +737,7 @@
         }
 
         function drawPlinkoBoard() {
+            if (!ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#2a3b47";
             pins.forEach(pin => {
@@ -457,5 +766,9 @@
             }
         }
 
-        initializePlatform();
+        // Initialize Call
+        window.addEventListener('DOMContentLoaded', initializePlatform);
+
     </script>
+</body>
+</html>
