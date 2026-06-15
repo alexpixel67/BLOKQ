@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ Studio | Creator Engine</title>
+    <style>
+        /* CSS RESET & VARIABLES */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --bg-dark: #0f1923;
+            --bg-panel: #1a2c38;
+            --bg-hover: #213743;
+            --accent-green: #00e701;
+            --accent-cyan: #00f0ff;
+            --text-main: #ffffff;
+            --text-muted: #b0bec5;
+            --border-color: #2a3b47;
+            --border-radius: 12px;
+            --error-red: #ff4d4d;
+        }
+
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        aside { width: 250px; background-color: var(--bg-panel); padding: 20px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
+        .logo span { color: var(--accent-green); }
+        .nav-menu { display: flex; flex-direction: column; gap: 10px; list-style: none; }
+        .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+        .nav-menu li:hover { background: var(--bg-hover); color: var(--text-main); }
+        .nav-menu li.active { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); border: 1px solid rgba(0, 231, 1, 0.2); }
+        
+        /* MAIN CONTENT */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+        
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; background-color: var(--bg-panel); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; }
+        .header-title { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+        .header-title span { background: var(--text-main); color: var(--bg-dark); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+        .btn-publish { background: var(--accent-green); color: var(--bg-dark); padding: 10px 25px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-publish:hover { box-shadow: 0 0 15px rgba(0, 231, 1, 0.4); transform: translateY(-1px); }
+        .btn-publish:disabled { background: #3a4b57; color: #8fa0b5; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* STUDIO LAYOUT */
+        .studio-container { padding: 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start; }
+        
+        /* PANELS */
+        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .panel-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .panel-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; margin-top: -15px; }
+        
+        /* INPUT GROUPS */
+        .input-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .input-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group input, .input-group select { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
+        .input-group input:focus, .input-group select:focus { border-color: var(--accent-cyan); }
+        
+        /* NODE EDITOR (PAYTABLE) */
+        .node-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .node-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; transition: 0.2s; }
+        .node-row:focus-within { border-color: var(--accent-green); }
+        .node-input { background: transparent; border: none; color: white; outline: none; font-size: 14px; width: 100%; }
+        .node-input.number { text-align: right; }
+        .input-suffix { display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; }
+        .btn-remove { background: rgba(255, 77, 77, 0.1); color: var(--error-red); border: none; width: 35px; height: 35px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-remove:hover { background: var(--error-red); color: white; }
+        
+        .btn-add-node { background: transparent; border: 1px dashed var(--border-color); color: var(--text-muted); width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add-node:hover { border-color: var(--text-main); color: var(--text-main); }
+
+        /* RTP CALCULATOR WIDGET */
+        .rtp-widget { background: linear-gradient(180deg, #132233 0%, var(--bg-dark) 100%); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 30px; text-align: center; position: sticky; top: 100px; }
+        .rtp-title { font-size: 14px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .rtp-value { font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 10px; transition: color 0.3s; }
+        .rtp-status { font-size: 13px; font-weight: bold; padding: 6px 12px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+        
+        /* Dynamic RTP Status Colors */
+        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); }
+        .status-warn { background: rgba(255, 170, 0, 0.1); color: #ffaa00; }
+        .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error-red); }
+
+        .prob-total { display: flex; justify-content: space-between; font-size: 14px; padding-top: 20px; border-top: 1px dashed var(--border-color); margin-bottom: 20px; }
+        .prob-total span:last-child { font-weight: bold; font-family: monospace; font-size: 16px; }
+
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">🟩 BLOK<span>Q</span></div>
+        <ul class="nav-menu">
+            <li onclick="window.location.href='home.html'">⬅️ Return to Lobby</li>
+            <li class="active">🛠️ Studio Builder</li>
+            <li>📊 My Analytics</li>
+            <li>💰 Creator Yields</li>
+        </ul>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-title">
+                Visual Probability Engine <span>Creator Mode</span>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <span id="save-status" style="color: var(--text-muted); font-size: 12px; display: none;">Saving...</span>
+                <button class="btn-publish" id="publish-btn" disabled>Publish Protocol</button>
+            </div>
+        </header>
+
+        <div class="studio-container">
+            <!-- LEFT COLUMN: CONFIGURATION -->
+            <div class="config-area">
+                
+                <!-- GAME META PANEL -->
+                <div class="panel">
+                    <div class="panel-header">1. General Metadata</div>
+                    <div class="panel-desc">Define how your arcade module appears in the global decentralized lobby.</div>
+                    
+                    <div class="input-row">
+                        <div class="input-group" style="flex: 3;">
+                            <label>World Title</label>
+                            <input type="text" id="game-title" placeholder="e.g. Cyberpunk Weapon Crates" value="Custom Lootbox">
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>Icon Emoji</label>
+                            <input type="text" id="game-emoji" placeholder="📦" value="💎" maxlength="2" style="text-align: center; font-size: 20px;">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Base Engine Template</label>
+                        <select id="game-engine">
+                            <option value="rng">Custom Probability Drops (Lootbox/RNG)</option>
+                            <option value="crash" disabled>Multiplayer Crash (Locked - Pro Tier)</option>
+                            <option value="plinko" disabled>Physics Plinko (Locked - Pro Tier)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- MATH & PAYTABLE PANEL -->
+                <div class="panel">
+                    <div class="panel-header">2. The Paytable Logic</div>
+                    <div class="panel-desc">Build your outcomes. The math is executed securely on-chain. Total probability must equal exactly 100%.</div>
+                    
+                    <!-- Table Headers -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px; padding: 0 10px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Outcome Name</span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Color Hex</span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; text-align: right;">Win Multiplier</span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; text-align: right;">Probability</span>
+                        <span style="width: 35px;"></span>
+                    </div>
+
+                    <div class="node-list" id="node-list">
+                        <!-- Dynamic Nodes injected here via JS -->
+                    </div>
+
+                    <button class="btn-add-node" id="add-node-btn">+ Add Outcome Node</button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: LIVE ANALYTICS -->
+            <div>
+                <div class="rtp-widget">
+                    <div class="rtp-title">Calculated Return-To-Player (RTP)</div>
+                    <div class="rtp-value" id="rtp-display">0.00%</div>
+                    <div class="rtp-status status-error" id="rtp-status">Configuring Math...</div>
+                    
+                    <div class="prob-total">
+                        <span>Total Probability Load:</span>
+                        <span id="prob-display" style="color: var(--error-red);">0.00%</span>
+                    </div>
+
+                    <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; text-align: left;">
+                        <strong>What is RTP?</strong><br>
+                        If RTP is 95%, for every 100 BQ wagered, the game mathematically returns 95 BQ to players, creating a 5 BQ house edge for you as the creator.<br><br>
+                        <em>Note: To prevent protocol draining, maximum allowed RTP is 99%.</em>
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FIREBASE & STUDIO LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        let auth = null;
+        let db = null;
+        let activeUser = null;
+
+        // UI Elements
+        const nodeList = document.getElementById('node-list');
+        const addNodeBtn = document.getElementById('add-node-btn');
+        const rtpDisplay = document.getElementById('rtp-display');
+        const rtpStatus = document.getElementById('rtp-status');
+        const probDisplay = document.getElementById('prob-display');
+        const publishBtn = document.getElementById('publish-btn');
+        const saveStatus = document.getElementById('save-status');
+
+        // Initial Paytable State (Default Lootbox setup)
+        let paytable = [
+            { id: 1, name: "Scrap Metal", color: "#b0bec5", multiplier: 0.1, prob: 60.0 },
+            { id: 2, name: "Bronze Coin", color: "#cd7f32", multiplier: 1.5, prob: 30.0 },
+            { id: 3, name: "Silver Ingot", color: "#c0c0c0", multiplier: 5.0, prob: 9.0 },
+            { id: 4, name: "Gold Relic", color: "#ffca28", multiplier: 25.0, prob: 1.0 }
+        ];
+        let nodeIdCounter = 5;
+
+        // 1. INITIALIZE PLATFORM
+        async function initializeStudio() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) throw new Error("Could not retrieve config.");
+                const firebaseConfig = await response.json();
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) {
+                        window.location.href = 'login.html';
+                    } else {
+                        activeUser = user;
+                        renderNodes();
+                    }
+                });
+            } catch (error) {
+                console.error("Studio Init Error:", error);
+                // Render fallback for local testing
+                renderNodes();
+            }
+        }
+
+        // 2. RENDER THE VISUAL EDITOR
+        function renderNodes() {
+            nodeList.innerHTML = "";
+            paytable.forEach((node, index) => {
+                const row = document.createElement('div');
+                row.className = 'node-row';
+                
+                row.innerHTML = `
+                    <input type="text" class="node-input" value="${node.name}" placeholder="Item Name" data-id="${node.id}" data-field="name">
+                    
+                    <div class="input-suffix" style="padding: 4px 8px;">
+                        <input type="color" value="${node.color}" style="width:20px; height:20px; border:none; background:transparent; cursor:pointer;" data-id="${node.id}" data-field="color">
+                    </div>
+
+                    <div class="input-suffix">
+                        <input type="number" class="node-input number" value="${node.multiplier}" step="0.1" min="0" data-id="${node.id}" data-field="multiplier">
+                        <span style="color: var(--text-muted); font-weight: bold; margin-left: 5px;">x</span>
+                    </div>
+
+                    <div class="input-suffix">
+                        <input type="number" class="node-input number" value="${node.prob}" step="0.01" min="0" max="100" data-id="${node.id}" data-field="prob">
+                        <span style="color: var(--text-muted); font-weight: bold; margin-left: 5px;">%</span>
+                    </div>
+
+                    <button class="btn-remove" onclick="removeNode(${node.id})">×</button>
+                `;
+                nodeList.appendChild(row);
+            });
+
+            bindNodeInputs();
+            calculateMath();
+        }
+
+        function bindNodeInputs() {
+            const inputs = document.querySelectorAll('.node-input, input[type="color"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const field = e.target.getAttribute('data-field');
+                    const value = e.target.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
+                    
+                    const nodeIndex = paytable.findIndex(n => n.id === id);
+                    if (nodeIndex > -1) {
+                        paytable[nodeIndex][field] = value;
+                        if (field === 'prob' || field === 'multiplier') calculateMath();
+                    }
+                });
+            });
+        }
+
+        addNodeBtn.addEventListener('click', () => {
+            paytable.push({
+                id: nodeIdCounter++,
+                name: "New Drop",
+                color: "#ffffff",
+                multiplier: 0.0,
+                prob: 0.0
+            });
+            renderNodes();
+        });
+
+        window.removeNode = function(id) {
+            if (paytable.length <= 1) return alert("You must have at least one outcome.");
+            paytable = paytable.filter(n => n.id !== id);
+            renderNodes();
+        }
+
+        // 3. SECURE REAL-TIME MATH CALCULATOR
+        function calculateMath() {
+            let totalProb = 0;
+            let rtp = 0;
+
+            paytable.forEach(node => {
+                totalProb += node.prob;
+                // RTP formula: Sum of (Probability * Multiplier)
+                rtp += (node.prob / 100) * node.multiplier;
+            });
+
+            // Format outputs
+            const formattedProb = totalProb.toFixed(2);
+            const rtpPercentage = (rtp * 100).toFixed(2);
+
+            probDisplay.innerText = `${formattedProb}%`;
+            rtpDisplay.innerText = `${rtpPercentage}%`;
+
+            // Validate constraints
+            let isMathValid = false;
+
+            if (formattedProb !== "100.00") {
+                probDisplay.style.color = "var(--error-red)";
+                rtpDisplay.style.color = "var(--text-muted)";
+                rtpStatus.className = "rtp-status status-error";
+                rtpStatus.innerText = "Error: Probability must equal exactly 100%";
+            } else {
+                probDisplay.style.color = "var(--accent-green)";
+                
+                // Determine RTP safety
+                if (rtpPercentage > 99.00) {
+                    rtpDisplay.style.color = "var(--error-red)";
+                    rtpStatus.className = "rtp-status status-error";
+                    rtpStatus.innerText = "Error: RTP cannot exceed 99.00% (House Deficit)";
+                } else if (rtpPercentage < 50.00) {
+                    rtpDisplay.style.color = "#ffaa00";
+                    rtpStatus.className = "rtp-status status-warn";
+                    rtpStatus.innerText = "Warning: Very Low RTP. Players may avoid.";
+                    isMathValid = true; // Technically allowed, but warned
+                } else {
+                    rtpDisplay.style.color = "var(--accent-green)";
+                    rtpStatus.className = "rtp-status status-safe";
+                    rtpStatus.innerText = "Protocol Verified: Mathematically Safe";
+                    isMathValid = true;
+                }
+            }
+
+            // Enable/Disable Publish Button
+            publishBtn.disabled = !isMathValid;
+        }
+
+        // 4. PUBLISH TO BLOCKCHAIN/FIRESTORE
+        publishBtn.addEventListener('click', async () => {
+            const title = document.getElementById('game-title').value.trim();
+            const emoji = document.getElementById('game-emoji').value.trim() || "🎮";
+            const type = document.getElementById('game-engine').value;
+
+            if (!title) return alert("Please provide a World Title.");
+            if (!activeUser) return alert("Security Error: Not authenticated.");
+
+            publishBtn.disabled = true;
+            publishBtn.innerText = "Compiling Logic...";
+            saveStatus.style.display = "inline";
+
+            try {
+                // Strip temporary UI IDs and clean data for database
+                const cleanPaytable = paytable.map(node => ({
+                    name: node.name,
+                    color: node.color,
+                    multiplier: node.multiplier,
+                    prob: node.prob
+                }));
+
+                // Push custom game architecture to Firebase
+                await addDoc(collection(db, "games"), {
+                    title: title,
+                    emoji: emoji,
+                    type: type,
+                    creator: activeUser.displayName || activeUser.email.split('@')[0],
+                    creatorUid: activeUser.uid,
+                    paytable: cleanPaytable, // <--- The custom creator logic
+                    createdAt: new Date()
+                });
+
+                saveStatus.innerText = "Successfully Deployed!";
+                saveStatus.style.color = "var(--accent-green)";
+                
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error("Publish Error:", error);
+                alert("Failed to deploy to protocol.");
+                publishBtn.disabled = false;
+                publishBtn.innerText = "Publish Protocol";
+                saveStatus.style.display = "none";
+            }
+        });
+
+        // Initialize Call
+        window.addEventListener('DOMContentLoaded', initializeStudio);
+    </script>
+</body>
+</html>
