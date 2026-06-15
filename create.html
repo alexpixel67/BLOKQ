@@ -3,477 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ Studio | Blueprint Engine</title>
+    <title>BLOKQ Studio | Blueprint Library</title>
     <style>
-        /* CSS RESET & IDE VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
-            --ide-bg: #0b1016;
-            --ide-panel: #131a22;
-            --ide-border: #222f3e;
-            --ide-highlight: #00e701;
-            --accent-blue: #00d2ff;
-            --text-main: #a9b6c2;
-            --text-bright: #ffffff;
-            --error-red: #ff4d4d;
+            --ide-bg: #0b1016; --ide-panel: #131a22; --ide-border: #222f3e;
+            --ide-highlight: #00e701; --accent-blue: #00d2ff; --text-main: #a9b6c2; --text-bright: #ffffff;
         }
 
         body { background-color: var(--ide-bg); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* TOP TOOLBAR */
-        .top-bar { background-color: #070a0f; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ide-border); z-index: 10; }
-        .brand { font-weight: 900; color: var(--text-bright); letter-spacing: 1px; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        /* TOP BAR */
+        .top-bar { background-color: #070a0f; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ide-border); }
+        .brand { font-weight: 900; color: var(--text-bright); letter-spacing: 1px; font-size: 20px; }
         .brand span { color: var(--ide-highlight); }
-        .toolbar { display: flex; gap: 10px; align-items: center; }
-        .world-name-input { background: rgba(255,255,255,0.05); border: 1px solid var(--ide-border); color: white; font-weight: bold; font-size: 14px; outline: none; padding: 8px 15px; border-radius: 6px; width: 250px; }
-        .world-name-input:focus { border-color: var(--ide-highlight); }
-        .btn { background: #1f2b38; border: 1px solid var(--ide-border); color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { background: #1f2b38; border: 1px solid var(--ide-border); color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:hover { background: #2c3e50; }
-        .btn-primary { background: var(--ide-highlight); color: #000; border: none; }
-        .btn-primary:hover { background: #00c401; }
-        .btn-primary:disabled { background: #1f2b38; color: #555; cursor: not-allowed; }
 
-        /* STUDIO LAYOUT */
-        .layout { display: flex; flex: 1; overflow: hidden; }
+        /* MAIN LAYOUT */
+        .content { flex: 1; overflow-y: auto; padding: 50px; display: flex; flex-direction: column; align-items: center; }
+        .header-text { text-align: center; margin-bottom: 50px; }
+        .header-text h1 { font-size: 36px; color: var(--text-bright); margin-bottom: 10px; }
+        .header-text p { font-size: 16px; color: #888; max-width: 600px; }
 
-        /* LEFT: BLUEPRINT LIBRARY */
-        .sidebar { width: 280px; background-color: var(--ide-panel); border-right: 1px solid var(--ide-border); display: flex; flex-direction: column; overflow-y: auto; }
-        .panel-header { padding: 15px; font-size: 11px; text-transform: uppercase; font-weight: 900; color: #667; letter-spacing: 1px; border-bottom: 1px solid var(--ide-border); background: #0b1016; position: sticky; top: 0; }
-        .engine-list { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-        .engine-card { padding: 15px; background: var(--ide-bg); border: 2px solid transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .engine-card:hover { background: #18232f; }
-        .engine-card.active { border-color: var(--accent-blue); background: rgba(0, 210, 255, 0.05); }
-        .engine-title { color: white; font-size: 14px; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .engine-desc { font-size: 11px; color: #888; line-height: 1.4; }
-
-        /* CENTER: LIVE VIEWPORT */
-        .viewport { flex: 1; display: flex; flex-direction: column; position: relative; background: #05070a; }
-        .viewport-header { position: absolute; top: 20px; left: 20px; z-index: 5; }
-        .badge { background: rgba(0,0,0,0.6); border: 1px solid var(--ide-border); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: var(--accent-blue); backdrop-filter: blur(5px); }
+        /* BLUEPRINT GRID */
+        .blueprint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; width: 100%; max-width: 1000px; }
         
-        .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        .blueprint-card { background: var(--ide-panel); border: 1px solid var(--ide-border); border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
+        .blueprint-card:hover { transform: translateY(-5px); border-color: var(--accent-blue); box-shadow: 0 15px 30px rgba(0, 210, 255, 0.1); }
         
-        /* Blueprint View: The Climb */
-        .climb-view { width: 100%; height: 100%; position: relative; background-size: cover; background-position: center; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .climb-avatar { font-size: 80px; position: absolute; left: 10%; bottom: 20%; transition: all 0.1s linear; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
-        .climb-multiplier { font-size: 72px; font-weight: 900; color: white; text-shadow: 0 5px 20px rgba(0,0,0,0.8); z-index: 2; }
-        .climb-ground { position: absolute; bottom: 0; width: 100%; height: 20%; background: linear-gradient(transparent, rgba(0,0,0,0.8)); }
-
-        /* Blueprint View: Dead Man's Grid */
-        .grid-view { display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 20px; background: rgba(15, 21, 28, 0.9); border-radius: 12px; border: 1px solid var(--ide-border); box-shadow: 0 20px 50px rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2; }
-        .mine-tile { width: 65px; height: 65px; background: #1f2b38; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 30px; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); transition: 0.1s; }
-        .mine-tile:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.1); }
-
-        .playtest-btn { position: absolute; bottom: 30px; background: var(--text-bright); color: #000; padding: 12px 30px; border-radius: 30px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 10; transition: 0.2s; }
-        .playtest-btn:hover { transform: scale(1.05); }
-
-        /* RIGHT: GAME CONFIGURATOR */
-        .configurator { width: 340px; background-color: var(--ide-panel); border-left: 1px solid var(--ide-border); display: flex; flex-direction: column; overflow-y: auto; }
-        .config-section { padding: 20px; border-bottom: 1px solid var(--ide-border); }
-        .config-title { font-size: 12px; font-weight: bold; color: white; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .bp-icon { font-size: 50px; margin-bottom: 20px; }
+        .bp-title { font-size: 20px; font-weight: bold; color: var(--text-bright); margin-bottom: 10px; }
+        .bp-desc { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 20px; }
         
-        .input-group { margin-bottom: 15px; }
-        .input-label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: bold; text-transform: uppercase; }
-        .ide-input { width: 100%; background: #0b1016; border: 1px solid var(--ide-border); color: white; padding: 10px; border-radius: 6px; outline: none; font-size: 13px; }
-        .ide-input:focus { border-color: var(--accent-blue); }
-
-        .emoji-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .emoji-btn { background: var(--ide-bg); border: 1px solid var(--ide-border); border-radius: 6px; font-size: 24px; padding: 10px 0; cursor: pointer; transition: 0.2s; }
-        .emoji-btn:hover { background: #1f2b38; }
-        .emoji-btn.selected { border-color: var(--accent-blue); background: rgba(0, 210, 255, 0.1); }
-
-        /* MATH & RTP LOCK */
-        .math-box { background: #0b1016; padding: 15px; border-radius: 8px; border: 1px solid var(--ide-border); }
-        .math-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
-        .math-val { font-family: monospace; font-size: 16px; font-weight: bold; color: white; }
-        
-        .status-badge { display: block; width: 100%; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; margin-top: 10px; }
-        .status-safe { background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); border: 1px solid rgba(0, 231, 1, 0.2); }
-        .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error-red); border: 1px solid rgba(255, 77, 77, 0.2); }
+        .bp-badge { position: absolute; top: 15px; right: 15px; background: rgba(0, 231, 1, 0.1); color: var(--ide-highlight); padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .locked { filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; }
+        .locked:hover { transform: none; border-color: var(--ide-border); box-shadow: none; }
+        .locked .bp-badge { background: rgba(255,255,255,0.1); color: #888; }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
         <div class="brand">🟩 BLOK<span>Q</span> Studio</div>
-        <div class="toolbar">
-            <input type="text" id="world-title" class="world-title-input" value="Chicken Crossing" placeholder="Name your world...">
-            <span id="save-status" style="color: var(--ide-highlight); font-size: 12px; display: none; margin-right:10px;">✓ Deployed</span>
-            <button class="btn" onclick="window.location.href='home.html'">Exit Library</button>
-            <button class="btn btn-primary" id="publish-btn">Publish World</button>
+        <button class="btn" onclick="window.location.href='home.html'">Exit to Lobby</button>
+    </div>
+
+    <div class="content">
+        <div class="header-text">
+            <h1>Select a Blueprint</h1>
+            <p>Choose a foundational mathematical engine. You will be able to completely customize the visuals, themes, and mechanics in the next step.</p>
+        </div>
+
+        <div class="blueprint-grid">
+            <!-- BLUEPRINT 1 -->
+            <div class="blueprint-card" onclick="window.location.href='editor_climb.html'">
+                <div class="bp-badge">Available</div>
+                <div class="bp-icon">📈</div>
+                <div class="bp-title">The Climb</div>
+                <div class="bp-desc">Push your luck mechanics. An entity travels further, the multiplier rises, and the player must cash out before the crash.</div>
+                <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold;">(Used for: Crash, Chicken Crossing)</div>
+            </div>
+
+            <!-- BLUEPRINT 2 -->
+            <div class="blueprint-card" onclick="window.location.href='editor_grid.html'">
+                <div class="bp-badge">Available</div>
+                <div class="bp-icon">💣</div>
+                <div class="bp-title">Dead Man's Grid</div>
+                <div class="bp-desc">Minesweeper logic. Players uncover safe tiles to build a multiplier and must avoid hidden traps.</div>
+                <div style="font-size: 11px; color: var(--accent-blue); font-weight: bold;">(Used for: Mines, Treasure Hunt)</div>
+            </div>
+
+            <!-- BLUEPRINT 3 (LOCKED PROTOTYPE) -->
+            <div class="blueprint-card locked">
+                <div class="bp-badge">Pro Tier</div>
+                <div class="bp-icon">🎡</div>
+                <div class="bp-title">Dynamic Wheel</div>
+                <div class="bp-desc">A physics-based rotational wheel with custom segments, colors, and weighted drop tables.</div>
+            </div>
+            
+            <!-- BLUEPRINT 4 (LOCKED PROTOTYPE) -->
+            <div class="blueprint-card locked">
+                <div class="bp-badge">Coming Soon</div>
+                <div class="bp-icon">⚔️</div>
+                <div class="bp-title">The Duel</div>
+                <div class="bp-desc">Head-to-head streak combat mechanics. Attack or block based on weighted RNG stats.</div>
+            </div>
         </div>
     </div>
 
-    <div class="layout">
-        <!-- 1. BLUEPRINT LIBRARY -->
-        <div class="sidebar">
-            <div class="panel-header">Blueprint Library</div>
-            <div class="engine-list">
-                
-                <div class="engine-card active" onclick="switchBlueprint('climb')">
-                    <div class="engine-title">📈 The Climb</div>
-                    <div class="engine-desc">Push your luck! An entity travels further and the multiplier goes up. Cash out before it crashes.</div>
-                </div>
-                
-                <div class="engine-card" onclick="switchBlueprint('grid')">
-                    <div class="engine-title">💣 Dead Man's Grid</div>
-                    <div class="engine-desc">Minesweeper logic. Uncover safe tiles to build a multiplier, avoid the hidden traps.</div>
-                </div>
-
-                <div class="engine-card" style="opacity: 0.4; cursor: not-allowed;">
-                    <div class="engine-title">⚔️ Duel (Locked)</div>
-                    <div class="engine-desc">Head-to-head streak combat mechanics. Upgrade to Pro Tier.</div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- 2. LIVE VIEWPORT -->
-        <div class="viewport">
-            <div class="viewport-header">
-                <div class="badge" id="preview-badge">Live Preview: The Climb</div>
-            </div>
-            
-            <div class="canvas-container" id="canvas-container">
-                
-                <!-- The Climb Viewport -->
-                <div class="climb-view" id="climb-view" style="background: linear-gradient(#1e3c72, #2a5298);">
-                    <div class="climb-multiplier" id="climb-multi">1.00x</div>
-                    <div class="climb-avatar" id="climb-avatar">🐔</div>
-                    <div class="climb-ground"></div>
-                </div>
-                
-                <!-- Grid Viewport -->
-                <div class="grid-view" id="grid-view">
-                    <!-- JS Injects 25 tiles here -->
-                </div>
-
-            </div>
-            
-            <button class="playtest-btn" id="playtest-btn">▶ Run Playtest</button>
-        </div>
-
-        <!-- 3. CONFIGURATOR (VISUALS & MATH) -->
-        <div class="configurator">
-            
-            <!-- VISUAL SKINNING -->
-            <div class="config-section">
-                <div class="config-title">1. Visual Skinning</div>
-                
-                <div id="config-climb">
-                    <div class="input-group">
-                        <label class="input-label">Player Avatar</label>
-                        <div class="emoji-picker">
-                            <button class="emoji-btn selected" onclick="setAvatar('🐔', this)">🐔</button>
-                            <button class="emoji-btn" onclick="setAvatar('🚀', this)">🚀</button>
-                            <button class="emoji-btn" onclick="setAvatar('🏃', this)">🏃</button>
-                            <button class="emoji-btn" onclick="setAvatar('🛸', this)">🛸</button>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Environment Theme</label>
-                        <select class="ide-input" id="climb-theme" onchange="updateTheme()">
-                            <option value="road">Highway / Road</option>
-                            <option value="space">Deep Space</option>
-                            <option value="cyber">Cyberpunk City</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="config-grid" style="display: none;">
-                    <div class="input-group">
-                        <label class="input-label">Safe Item / Trap Item</label>
-                        <select class="ide-input" id="grid-theme" onchange="renderGridPreview()">
-                            <option value="💎,💣">💎 Gems / 💣 Bombs</option>
-                            <option value="💰,💀">💰 Coins / 💀 Skulls</option>
-                            <option value="🥕,🧟">🥕 Carrots / 🧟 Zombies</option>
-                            <option value="🌟,👽">🌟 Stars / 👽 Aliens</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MATHEMATICS -->
-            <div class="config-section">
-                <div class="config-title">2. Mathematical Blueprint</div>
-                
-                <div id="math-climb">
-                    <div class="input-group">
-                        <label class="input-label">Volatility Curve</label>
-                        <select class="ide-input" id="climb-volatility" onchange="calculateMath()">
-                            <option value="low">Low Risk (Frequent low payouts)</option>
-                            <option value="med" selected>Standard Balanced</option>
-                            <option value="high">Extreme (Rare high payouts)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="math-grid" style="display: none;">
-                    <div class="input-group">
-                        <label class="input-label">Trap Density</label>
-                        <select class="ide-input" id="grid-traps" onchange="calculateMath()">
-                            <option value="3">3 Traps (Easy)</option>
-                            <option value="5" selected>5 Traps (Medium)</option>
-                            <option value="10">10 Traps (Hard)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label class="input-label">Target House Edge (%)</label>
-                    <input type="number" class="ide-input" id="house-edge" value="4.0" step="0.5" min="1" max="10" onchange="calculateMath()">
-                </div>
-            </div>
-
-            <!-- SECURITY INSPECTOR -->
-            <div class="config-section" style="background: #070a0f; border-top: 1px solid var(--ide-border); flex: 1;">
-                <div class="config-title">Security Inspector</div>
-                <div class="math-box">
-                    <div class="math-row">
-                        <span>Calculated Global RTP:</span>
-                        <span class="math-val" id="rtp-display">96.00%</span>
-                    </div>
-                    <div class="math-row">
-                        <span>Terminal House Edge:</span>
-                        <span class="math-val" id="edge-display" style="color: var(--ide-highlight);">4.00%</span>
-                    </div>
-                    <div class="status-badge status-safe" id="math-status">Blueprint Logic Locked</div>
-                </div>
-                <p style="font-size: 11px; color: #667; margin-top: 15px; line-height: 1.5;">
-                    The mathematical structure of this blueprint ensures the House Edge is permanently locked across all possible player choices. Visuals have no effect on core probability.
-                </p>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- SCRIPT LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // ==========================================
-        // 1. GLOBAL STATE
-        // ==========================================
-        let auth = null;
-        let db = null;
-        let activeUser = null;
-        
-        let currentBlueprint = 'climb';
-
-        // UI Elements
-        const climbView = document.getElementById('climb-view');
-        const gridView = document.getElementById('grid-view');
-        const climbAvatar = document.getElementById('climb-avatar');
-        const climbMulti = document.getElementById('climb-multi');
-        const rtpDisplay = document.getElementById('rtp-display');
-        const edgeDisplay = document.getElementById('edge-display');
-        const mathStatus = document.getElementById('math-status');
-        const publishBtn = document.getElementById('publish-btn');
-        const playtestBtn = document.getElementById('playtest-btn');
-
-        // ==========================================
-        // 2. BLUEPRINT SWITCHER
-        // ==========================================
-        window.switchBlueprint = function(blueprint) {
-            currentBlueprint = blueprint;
-            
-            // Sidebar UI
-            document.querySelectorAll('.engine-card').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            // Toggle Configs & Views
-            if (blueprint === 'climb') {
-                document.getElementById('preview-badge').innerText = "Blueprint: The Climb";
-                climbView.style.display = "flex";
-                gridView.style.display = "none";
-                document.getElementById('config-climb').style.display = "block";
-                document.getElementById('config-grid').style.display = "none";
-                document.getElementById('math-climb').style.display = "block";
-                document.getElementById('math-grid').style.display = "none";
-                
-                // Defaults for chicken crossing
-                document.getElementById('world-title').value = "Chicken Crossing";
-                climbAvatar.innerText = "🐔";
-                document.getElementById('climb-theme').value = "road";
-                updateTheme();
-            } else if (blueprint === 'grid') {
-                document.getElementById('preview-badge').innerText = "Blueprint: Dead Man's Grid";
-                climbView.style.display = "none";
-                gridView.style.display = "grid";
-                document.getElementById('config-climb').style.display = "none";
-                document.getElementById('config-grid').style.display = "block";
-                document.getElementById('math-climb').style.display = "none";
-                document.getElementById('math-grid').style.display = "block";
-                
-                document.getElementById('world-title').value = "Gem Sweeper";
-                renderGridPreview();
-            }
-            calculateMath();
-        }
-
-        // ==========================================
-        // 3. VISUAL CUSTOMIZATION
-        // ==========================================
-        window.setAvatar = function(emoji, btn) {
-            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            climbAvatar.innerText = emoji;
-        }
-
-        window.updateTheme = function() {
-            const theme = document.getElementById('climb-theme').value;
-            if (theme === 'road') climbView.style.background = "linear-gradient(#546E7A, #263238)";
-            if (theme === 'space') climbView.style.background = "radial-gradient(circle at top, #0f2027, #203a43, #2c5364)";
-            if (theme === 'cyber') climbView.style.background = "linear-gradient(135deg, #1f005c, #5b0060, #870160)";
-        }
-
-        window.renderGridPreview = function() {
-            const themeChars = document.getElementById('grid-theme').value.split(',');
-            const safeIcon = themeChars[0];
-            const trapIcon = themeChars[1];
-
-            gridView.innerHTML = "";
-            for(let i=0; i<25; i++) {
-                const tile = document.createElement('div');
-                tile.className = "mine-tile";
-                tile.onclick = function() {
-                    if (this.innerHTML !== "") return;
-                    const isTrap = Math.random() < 0.2;
-                    this.innerHTML = isTrap ? trapIcon : safeIcon;
-                    this.style.background = isTrap ? "rgba(255, 77, 77, 0.3)" : "rgba(0, 231, 1, 0.2)";
-                };
-                gridView.appendChild(tile);
-            }
-        }
-
-        // ==========================================
-        // 4. MATHEMATICS & RTP
-        // ==========================================
-        window.calculateMath = function() {
-            let edge = parseFloat(document.getElementById('house-edge').value) || 4.0;
-            
-            // Enforce hard limits
-            if (edge < 1.0) edge = 1.0;
-            if (edge > 10.0) edge = 10.0;
-            
-            const rtp = (100 - edge).toFixed(2);
-            
-            rtpDisplay.innerText = `${rtp}%`;
-            edgeDisplay.innerText = `${edge.toFixed(2)}%`;
-            
-            mathStatus.className = "status-badge status-safe";
-            mathStatus.innerText = "Blueprint Logic Locked & Safe";
-            publishBtn.disabled = false;
-        }
-
-        // ==========================================
-        // 5. PLAYTEST ANIMATIONS
-        // ==========================================
-        let isAnimating = false;
-        playtestBtn.onclick = () => {
-            if (isAnimating) return;
-            if (currentBlueprint === 'grid') { renderGridPreview(); return; }
-
-            // Climb Animation
-            isAnimating = true;
-            playtestBtn.style.display = "none";
-            climbAvatar.style.left = "10%";
-            climbAvatar.style.bottom = "20%";
-            climbAvatar.style.transform = "scale(1)";
-            
-            let multi = 1.00;
-            let targetCrash = 1.00 + (Math.random() * 3);
-            
-            let interval = setInterval(() => {
-                multi += 0.02 + (multi * 0.01);
-                climbMulti.innerText = multi.toFixed(2) + "x";
-                
-                // Visual Movement
-                const progress = Math.min(1, (multi - 1) / (targetCrash - 1));
-                climbAvatar.style.left = `${10 + (progress * 60)}%`;
-                climbAvatar.style.bottom = `${20 + (progress * 40)}%`;
-
-                if (multi >= targetCrash) {
-                    clearInterval(interval);
-                    climbMulti.innerText = "CRASH!";
-                    climbMulti.style.color = "var(--error-red)";
-                    climbAvatar.innerText = "💥";
-                    climbAvatar.style.transform = "scale(2)";
-                    
-                    setTimeout(() => {
-                        climbMulti.style.color = "white";
-                        climbAvatar.innerText = document.querySelector('.emoji-btn.selected').innerText;
-                        climbAvatar.style.transform = "scale(1)";
-                        climbAvatar.style.left = "10%";
-                        climbAvatar.style.bottom = "20%";
-                        climbMulti.innerText = "1.00x";
-                        playtestBtn.style.display = "block";
-                        isAnimating = false;
-                    }, 2000);
-                }
-            }, 50);
-        };
-
-        // ==========================================
-        // 6. FIREBASE DEPLOYMENT
-        // ==========================================
-        async function initFirebase() {
-            try {
-                const res = await fetch('/api/config');
-                const config = await res.json();
-                const app = initializeApp(config);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                onAuthStateChanged(auth, user => { activeUser = user; });
-            } catch(e) { console.log("Running locally. Firebase not detected."); }
-            
-            renderGridPreview();
-            calculateMath();
-        }
-
-        publishBtn.addEventListener('click', async () => {
-            if (!activeUser) return alert("Must be logged in to publish.");
-            const title = document.getElementById('world-title').value.trim() || "My Blueprint World";
-            
-            publishBtn.disabled = true;
-            publishBtn.innerText = "Deploying...";
-
-            let payload = {
-                title: title,
-                type: currentBlueprint,
-                creator: activeUser.displayName || activeUser.email.split('@')[0],
-                creatorUid: activeUser.uid,
-                edge: parseFloat(document.getElementById('house-edge').value),
-                createdAt: new Date()
-            };
-
-            // Save Visual Configuration based on blueprint
-            if (currentBlueprint === 'climb') {
-                payload.emoji = climbAvatar.innerText;
-                payload.theme = document.getElementById('climb-theme').value;
-                payload.volatility = document.getElementById('climb-volatility').value;
-            } else if (currentBlueprint === 'grid') {
-                payload.emoji = document.getElementById('grid-theme').value.split(',')[0];
-                payload.theme = document.getElementById('grid-theme').value;
-                payload.traps = parseInt(document.getElementById('grid-traps').value);
-            }
-
-            try {
-                await addDoc(collection(db, "games"), payload);
-                document.getElementById('save-status').style.display = "inline";
-                publishBtn.innerText = "Deployed!";
-                publishBtn.style.background = "white";
-                setTimeout(() => window.location.href = 'home.html', 1500);
-            } catch (error) {
-                alert("Failed to publish.");
-                publishBtn.disabled = false;
-                publishBtn.innerText = "Publish World";
-            }
-        });
-
-        initFirebase();
-    </script>
 </body>
 </html>
