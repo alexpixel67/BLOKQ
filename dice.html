@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ | Dice</title>
+    <style>
+        /* CSS RESET & CASINO THEME */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-hover: #334155;
+            --accent-green: #00e701;
+            --accent-blue: #0ea5e9;
+            --text-main: #94a3b8;
+            --text-bright: #ffffff;
+            --border-color: #334155;
+            --border-radius: 12px;
+            --error-red: #ef4444;
+        }
+
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR / CONTROLS */
+        aside { width: 320px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); z-index: 5; }
+        .logo-back { font-size: 14px; font-weight: bold; color: var(--text-bright); cursor: pointer; text-decoration: none; margin-bottom: 10px; display: inline-block; }
+        
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-label { font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; color: var(--text-main); display: flex; justify-content: space-between; }
+        
+        .input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; align-items: center; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: var(--accent-green); }
+        .input-wrapper input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; width: 100%; }
+        .input-suffix { padding-right: 15px; font-weight: bold; color: #64748b; font-size: 12px; }
+        .btn-mod { background: var(--bg-hover); border: none; color: white; width: 45px; height: 100%; font-weight: bold; cursor: pointer; border-left: 1px solid var(--border-color); transition: 0.2s; }
+        .btn-mod:hover { background: #475569; }
+
+        .btn-action { background: var(--accent-green); color: #000; border: none; padding: 18px; border-radius: 8px; font-weight: 900; font-size: 18px; text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0, 231, 1, 0.2); width: 100%; margin-top: 10px; }
+        .btn-action:hover { background: #00c401; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 231, 1, 0.4); }
+        .btn-action:active { transform: translateY(1px); }
+        .btn-action:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        .toggle-btn { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .toggle-btn:hover { background: var(--bg-hover); }
+        .toggle-btn span { color: var(--accent-green); }
+
+        /* VIEWPORT */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0f172a; position: relative; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; z-index: 10; border-bottom: 1px solid var(--border-color); }
+        .header-title { font-size: 20px; font-weight: bold; color: white; }
+        .balance-box { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: bold; display: flex; gap: 8px; align-items: center; }
+        .balance-box span { color: var(--accent-green); }
+
+        /* DICE PLAY AREA */
+        .play-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; position: relative; }
+        
+        .result-display { font-size: 120px; font-weight: 900; color: white; text-shadow: 0 10px 30px rgba(0,0,0,0.5); font-variant-numeric: tabular-nums; margin-bottom: 40px; transition: color 0.1s, transform 0.1s; }
+        .result-display.win { color: var(--accent-green); transform: scale(1.05); text-shadow: 0 0 40px rgba(0, 231, 1, 0.4); }
+        .result-display.loss { color: var(--error-red); transform: scale(0.95); text-shadow: 0 0 40px rgba(239, 68, 68, 0.4); }
+
+        /* SLIDER COMPONENT */
+        .slider-container { width: 100%; max-width: 700px; background: var(--bg-panel); padding: 30px 40px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
+        
+        .slider-labels { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; color: var(--text-main); margin-bottom: 15px; }
+        
+        .slider-track-bg { width: 100%; height: 12px; background: var(--error-red); border-radius: 6px; position: relative; }
+        .slider-track-fill { height: 100%; background: var(--accent-green); border-radius: 6px; position: absolute; top: 0; left: 0; width: 50.5%; transition: 0.1s; pointer-events: none; }
+        
+        .dice-slider { -webkit-appearance: none; width: 100%; height: 12px; position: absolute; top: 0; left: 0; background: transparent; outline: none; margin: 0; z-index: 3; }
+        .dice-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 28px; height: 28px; background: #ffffff; border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.5); border: 4px solid var(--bg-panel); transition: transform 0.1s; }
+        .dice-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        
+        .slider-target-label { position: absolute; top: -35px; transform: translateX(-50%); background: white; color: black; font-weight: bold; padding: 4px 10px; border-radius: 4px; font-size: 14px; pointer-events: none; }
+        .slider-target-label::after { content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); border-width: 4px 4px 0; border-style: solid; border-color: white transparent transparent transparent; }
+
+        /* RECENT HITS BAR */
+        .recent-hits { height: 50px; background: rgba(30, 41, 59, 0.8); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; }
+        .hit-pill { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; min-width: 55px; text-align: center; animation: slideDown 0.2s ease-out forwards; }
+        .hit-pill.high { color: var(--accent-green); background: rgba(0, 231, 1, 0.1); border: 1px solid rgba(0, 231, 1, 0.2); }
+        .hit-pill.low { color: var(--error-red); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+        @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <a href="home.html" class="logo-back">⬅ Return to Lobby</a>
+            <div class="header-title" style="margin-top: 5px;">🎲 DICE</div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Bet Amount</label>
+            <div class="input-wrapper">
+                <input type="number" id="bet-amount" value="10" min="1">
+                <button class="btn-mod" id="bet-half-btn">½</button>
+                <button class="btn-mod" id="bet-double-btn">2x</button>
+            </div>
+        </div>
+
+        <div style="height: 1px; background: var(--border-color); margin: 10px 0;"></div>
+
+        <div class="control-group">
+            <label class="control-label">Payout</label>
+            <div class="input-wrapper">
+                <input type="number" id="payout-input" value="2.00" step="0.01" min="1.01" max="9900">
+                <div class="input-suffix">x</div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Win Chance</label>
+            <div class="input-wrapper">
+                <input type="number" id="chance-input" value="49.50" step="0.01" min="0.01" max="98.00">
+                <div class="input-suffix">%</div>
+            </div>
+        </div>
+
+        <button class="toggle-btn" id="toggle-condition">
+            Roll Direction: <span id="condition-label">Roll Over</span>
+        </button>
+
+        <button class="btn-action" id="action-btn">Roll Dice</button>
+        
+        <div style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 10px;">
+            Target a number between 0.00 and 100.00. The math includes a 1% house edge applied universally to all payouts.
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-title">UGC Dice Hub</div>
+            <div class="balance-box">
+                <span id="bq-balance">Loading...</span> BQ
+            </div>
+        </header>
+
+        <div class="play-area">
+            <div class="result-display" id="result-display">50.00</div>
+
+            <div class="slider-container">
+                <div class="slider-labels">
+                    <span>0.00</span>
+                    <span>25</span>
+                    <span>50</span>
+                    <span>75</span>
+                    <span>100.00</span>
+                </div>
+                
+                <div style="position: relative; height: 12px;">
+                    <div class="slider-track-bg" id="track-bg"></div>
+                    <div class="slider-track-fill" id="track-fill"></div>
+                    <input type="range" min="2.00" max="98.00" step="0.01" value="50.50" class="dice-slider" id="dice-slider">
+                    <div class="slider-target-label" id="slider-label">50.50</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="recent-hits" id="recent-hits">
+            <!-- Dice history injected here -->
+        </div>
+    </main>
+
+    <!-- FIREBASE AND DICE ENGINE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Global State
+        let auth = null, db = null, activeUser = null, activeUserRef = null;
+        let userBalance = 0;
+        
+        // Math Engine Constants
+        const HOUSE_EDGE_MULTIPLIER = 99.0; // Represents 99% RTP (1% House Edge)
+        
+        // Game State Variables
+        let isRollOver = true; 
+        let targetNumber = 50.50;
+        let winChance = 49.50;
+        let payout = 2.00;
+
+        // UI Elements
+        const balanceDisplay = document.getElementById('bq-balance');
+        const betInput = document.getElementById('bet-amount');
+        const payoutInput = document.getElementById('payout-input');
+        const chanceInput = document.getElementById('chance-input');
+        const toggleConditionBtn = document.getElementById('toggle-condition');
+        const conditionLabel = document.getElementById('condition-label');
+        const actionBtn = document.getElementById('action-btn');
+        
+        const resultDisplay = document.getElementById('result-display');
+        const diceSlider = document.getElementById('dice-slider');
+        const trackBg = document.getElementById('track-bg');
+        const trackFill = document.getElementById('track-fill');
+        const sliderLabel = document.getElementById('slider-label');
+        const recentHitsBar = document.getElementById('recent-hits');
+
+        // Modifiers
+        document.getElementById('bet-half-btn').onclick = () => betInput.value = Math.max(1, Math.floor(parseInt(betInput.value) / 2));
+        document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
+
+        // Init Firebase
+        async function initGame() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) throw new Error("Config not loaded.");
+                const config = await response.json();
+
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, user => {
+                    if (!user) window.location.href = "login.html";
+                    else {
+                        activeUser = user;
+                        activeUserRef = doc(db, "users", user.uid);
+                        onSnapshot(activeUserRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                userBalance = docSnap.data().balance;
+                                balanceDisplay.innerText = userBalance.toLocaleString();
+                            }
+                        });
+                    }
+                });
+            } catch (err) { console.error(err); }
+
+            updateFromSlider(); // Initialize Math
+        }
+
+        // ==========================================
+        // MATH BINDINGS & SYNCHRONIZATION
+        // ==========================================
+        
+        // 1. When User drags the slider
+        function updateFromSlider() {
+            targetNumber = parseFloat(diceSlider.value);
+            
+            if (isRollOver) {
+                winChance = 100.00 - targetNumber;
+                trackFill.style.left = `${targetNumber}%`;
+                trackFill.style.width = `${100 - targetNumber}%`;
+                trackFill.style.background = "var(--accent-green)";
+                trackBg.style.background = "var(--error-red)";
+            } else {
+                winChance = targetNumber;
+                trackFill.style.left = "0%";
+                trackFill.style.width = `${targetNumber}%`;
+                trackFill.style.background = "var(--accent-green)";
+                trackBg.style.background = "var(--error-red)";
+            }
+
+            payout = HOUSE_EDGE_MULTIPLIER / winChance;
+            
+            // Sync UI
+            chanceInput.value = winChance.toFixed(2);
+            payoutInput.value = payout.toFixed(4);
+            sliderLabel.innerText = targetNumber.toFixed(2);
+            sliderLabel.style.left = `${targetNumber}%`;
+        }
+
+        // 2. When User types a new Win Chance
+        function updateFromChance() {
+            let val = parseFloat(chanceInput.value);
+            if (isNaN(val)) return;
+            if (val < 0.01) val = 0.01;
+            if (val > 98.00) val = 98.00;
+
+            winChance = val;
+            targetNumber = isRollOver ? 100.00 - winChance : winChance;
+            diceSlider.value = targetNumber;
+            
+            updateFromSlider();
+        }
+
+        // 3. When User types a new Payout Multiplier
+        function updateFromPayout() {
+            let val = parseFloat(payoutInput.value);
+            if (isNaN(val)) return;
+            if (val < 1.0102) val = 1.0102; // Max 98% chance
+            if (val > 9900.0) val = 9900.0; // Min 0.01% chance
+
+            winChance = HOUSE_EDGE_MULTIPLIER / val;
+            targetNumber = isRollOver ? 100.00 - winChance : winChance;
+            diceSlider.value = targetNumber;
+            
+            updateFromSlider();
+        }
+
+        // Toggle Roll Over / Roll Under
+        function toggleCondition() {
+            isRollOver = !isRollOver;
+            conditionLabel.innerText = isRollOver ? "Roll Over" : "Roll Under";
+            
+            // Flip the target number to keep the exact same win chance
+            targetNumber = 100.00 - targetNumber;
+            diceSlider.value = targetNumber;
+            
+            updateFromSlider();
+        }
+
+        // Event Listeners for Math Binding
+        diceSlider.addEventListener('input', updateFromSlider);
+        chanceInput.addEventListener('change', updateFromChance);
+        payoutInput.addEventListener('change', updateFromPayout);
+        toggleConditionBtn.addEventListener('click', toggleCondition);
+
+
+        // ==========================================
+        // ULTRA-FAST ROLL EXECUTION
+        // ==========================================
+        actionBtn.addEventListener('click', async () => {
+            const betAmount = parseInt(betInput.value);
+            if (isNaN(betAmount) || betAmount <= 0) return alert("Invalid Bet");
+            if (betAmount > userBalance) return alert("Insufficient BQ Balance");
+
+            // Lock button instantly to prevent double-charging glitch
+            actionBtn.disabled = true;
+
+            // Generate cryptographically random number 0.00 to 100.00
+            const rollResult = (Math.random() * 100);
+            
+            // Check Win Condition
+            const isWin = isRollOver ? (rollResult > targetNumber) : (rollResult < targetNumber);
+            const payoutAmount = isWin ? Math.floor(betAmount * payout) : 0;
+            
+            // Instant Database Update (Debit bet, credit payout if win)
+            const netChange = payoutAmount - betAmount;
+            await updateDoc(activeUserRef, { balance: userBalance + netChange });
+
+            // Visual Results
+            resultDisplay.innerText = rollResult.toFixed(2);
+            resultDisplay.className = `result-display ${isWin ? 'win' : 'loss'}`;
+
+            appendRecentHit(rollResult.toFixed(2), isWin);
+
+            // Re-enable instantly for rapid-fire rolling
+            actionBtn.disabled = false;
+        });
+
+        function appendRecentHit(val, isWin) {
+            const pill = document.createElement('div');
+            pill.className = `hit-pill ${isWin ? 'high' : 'low'}`;
+            pill.innerText = val;
+            recentHitsBar.insertBefore(pill, recentHitsBar.firstChild);
+            if (recentHitsBar.children.length > 20) recentHitsBar.removeChild(recentHitsBar.lastChild);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
