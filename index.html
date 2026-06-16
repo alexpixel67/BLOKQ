@@ -285,7 +285,8 @@
         // Gateway Guard: Redirects to login if they try to play a game while logged out
         window.navigateGame = function(targetUrl) {
             if (!isLoggedIn) {
-                window.location.href = 'login.html';
+                // Save the intended destination so we can redirect back after login
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(targetUrl);
             } else {
                 window.location.href = targetUrl;
             }
