@@ -1,1 +1,5 @@
-Nothing needs to be added to the .gitignore file based on the provided changes. The only modified file is 'login.html', which is a source file and should not be ignored.
+(crash.html, dice.html, limbo.html, mines.html, plinko.html are all html files which are source code files, so according to rule 6, output nothing)
+
+```html
+
+```
