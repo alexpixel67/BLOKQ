@@ -107,32 +107,6 @@
             margin-right: auto;
         }
 
-        .btn-make-admin {
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-            color: var(--bg-dark);
-            border: none;
-            padding: 16px 40px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-make-admin:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.5);
-        }
-
-        .btn-make-admin:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         /* GAME MANAGEMENT SECTION */
         .game-management {
             background: var(--bg-panel);
@@ -430,8 +404,7 @@
             <!-- NOT AUTHORIZED VIEW -->
             <div id="not-authorized-view" class="admin-not-authorized" style="display: none;">
                 <h2>🔒 Admin Access Required</h2>
-                <p>You need administrator privileges to access this section. Click the button below to request admin access.</p>
-                <button class="btn-make-admin" id="btn-make-admin">Make Myself Admin</button>
+                <p>You need administrator privileges to access this section. Please contact an existing admin to grant you access.</p>
             </div>
 
             <!-- ADMIN PANEL VIEW -->
@@ -517,7 +490,6 @@
         const adminStatus = document.getElementById('admin-status');
         const notAuthorizedView = document.getElementById('not-authorized-view');
         const adminPanelView = document.getElementById('admin-panel-view');
-        const btnMakeAdmin = document.getElementById('btn-make-admin');
         const notification = document.getElementById('notification');
 
         async function initializePlatform() {
@@ -596,45 +568,14 @@
                 adminPanelView.style.display = 'block';
                 loadGames();
             } else {
+                // Non-admin users are redirected to index.html immediately
                 adminStatus.innerText = 'User';
                 adminStatus.style.background = 'var(--bg-hover)';
-                notAuthorizedView.style.display = 'block';
-                adminPanelView.style.display = 'none';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 100);
             }
         }
-
-        // Make myself admin button
-        btnMakeAdmin.addEventListener('click', async () => {
-            if (!currentUser) {
-                showNotification('Please log in first', 'error');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            btnMakeAdmin.disabled = true;
-            btnMakeAdmin.innerText = 'Processing...';
-
-            try {
-                const userRef = doc(db, "users", currentUser.uid);
-                await setDoc(userRef, {
-                    username: currentUser.displayName || currentUser.email.split('@')[0],
-                    email: currentUser.email || "No email",
-                    balance: 10000,
-                    role: 'admin',
-                    createdAt: new Date()
-                }, { merge: true });
-
-                showNotification('✅ You are now an administrator!', 'success');
-                isAdmin = true;
-                updateAdminView();
-            } catch (error) {
-                console.error('Error setting admin role:', error);
-                showNotification('Failed to set admin role. Please try again.', 'error');
-            } finally {
-                btnMakeAdmin.disabled = false;
-                btnMakeAdmin.innerText = 'Make Myself Admin';
-            }
-        });
 
         // Upload area handling
         const uploadArea = document.getElementById('upload-area');
