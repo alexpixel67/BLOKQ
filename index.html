@@ -86,7 +86,8 @@
         .game-card:hover { transform: translateY(-5px); border-color: var(--accent-cyan); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .game-card:hover .thumbnail { background: #233248; }
         
-        .thumbnail { height: 160px; background: #182333; display: flex; justify-content: center; align-items: center; font-size: 65px; transition: 0.2s; }
+        .thumbnail { height: 160px; background: #182333; display: flex; justify-content: center; align-items: center; font-size: 65px; transition: 0.2s; overflow: hidden; }
+        .thumbnail img { width: 100%; height: 100%; object-fit: cover; }
         .game-info { padding: 18px; }
         .game-title { font-weight: bold; font-size: 16px; color: white; margin-bottom: 6px; }
         .game-creator { font-size: 12px; color: var(--text-main); display: flex; justify-content: space-between; }
@@ -154,53 +155,8 @@
 
             <!-- OFFICIAL GAMES SECTION -->
             <div class="section-title">⭐ BLOKQ Originals</div>
-            <div class="grid">
-                
-                <div class="game-card" onclick="navigateGame('plinko.html')">
-                    <div class="live-players"><span class="dot"></span> 3,421</div>
-                    <div class="thumbnail">🟢</div>
-                    <div class="game-info">
-                        <div class="game-title">Plinko</div>
-                        <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                    </div>
-                </div>
-
-                <div class="game-card" onclick="navigateGame('crash.html')">
-                    <div class="live-players"><span class="dot"></span> 8,192</div>
-                    <div class="thumbnail">🚀</div>
-                    <div class="game-info">
-                        <div class="game-title">Crash</div>
-                        <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                    </div>
-                </div>
-
-                <div class="game-card" onclick="navigateGame('mines.html')">
-                    <div class="live-players"><span class="dot"></span> 2,105</div>
-                    <div class="thumbnail">💣</div>
-                    <div class="game-info">
-                        <div class="game-title">Mines</div>
-                        <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                    </div>
-                </div>
-
-                <div class="game-card" onclick="navigateGame('dice.html')">
-                    <div class="live-players"><span class="dot"></span> 1,844</div>
-                    <div class="thumbnail">🎲</div>
-                    <div class="game-info">
-                        <div class="game-title">Dice</div>
-                        <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                    </div>
-                </div>
-
-                <div class="game-card" onclick="navigateGame('limbo.html')">
-                    <div class="live-players"><span class="dot"></span> 4,022</div>
-                    <div class="thumbnail">📉</div>
-                    <div class="game-info">
-                        <div class="game-title">Limbo</div>
-                        <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                    </div>
-                </div>
-
+            <div class="grid" id="games-grid">
+                <!-- Games will be loaded dynamically from Firestore -->
             </div>
         </div>
     </main>
@@ -209,7 +165,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let auth = null;
         let db = null;
@@ -224,6 +180,7 @@
         const profileDropdown = document.getElementById('profileDropdown');
         const dropdownUsername = document.getElementById('dropdown-username');
         const dropdownEmail = document.getElementById('dropdown-email');
+        const gamesGrid = document.getElementById('games-grid');
 
         async function initializePlatform() {
             try {
@@ -280,6 +237,9 @@
                     });
                 }
             });
+
+            // Load games after auth is established
+            loadGames();
         }
 
         // Gateway Guard: Redirects to login if they try to play a game while logged out
@@ -307,6 +267,104 @@
                 window.location.reload(); 
             });
         });
+
+        // Load games from Firestore
+        async function loadGames() {
+            try {
+                const gamesQuery = query(collection(db, "games"));
+                const querySnapshot = await getDocs(gamesQuery);
+
+                if (querySnapshot.empty) {
+                    // Default games if no custom games are added
+                    gamesGrid.innerHTML = `
+                        <div class="game-card" onclick="navigateGame('plinko.html')">
+                            <div class="live-players"><span class="dot"></span> 3,421</div>
+                            <div class="thumbnail">🟢</div>
+                            <div class="game-info">
+                                <div class="game-title">Plinko</div>
+                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                            </div>
+                        </div>
+                        <div class="game-card" onclick="navigateGame('crash.html')">
+                            <div class="live-players"><span class="dot"></span> 8,192</div>
+                            <div class="thumbnail">🚀</div>
+                            <div class="game-info">
+                                <div class="game-title">Crash</div>
+                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                            </div>
+                        </div>
+                        <div class="game-card" onclick="navigateGame('mines.html')">
+                            <div class="live-players"><span class="dot"></span> 2,105</div>
+                            <div class="thumbnail">💣</div>
+                            <div class="game-info">
+                                <div class="game-title">Mines</div>
+                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                            </div>
+                        </div>
+                        <div class="game-card" onclick="navigateGame('dice.html')">
+                            <div class="live-players"><span class="dot"></span> 1,844</div>
+                            <div class="thumbnail">🎲</div>
+                            <div class="game-info">
+                                <div class="game-title">Dice</div>
+                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                            </div>
+                        </div>
+                        <div class="game-card" onclick="navigateGame('limbo.html')">
+                            <div class="live-players"><span class="dot"></span> 4,022</div>
+                            <div class="thumbnail">📉</div>
+                            <div class="game-info">
+                                <div class="game-title">Limbo</div>
+                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                gamesGrid.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const game = doc.data();
+                    const gameCard = document.createElement('div');
+                    gameCard.className = 'game-card';
+                    gameCard.onclick = () => navigateGame(game.page);
+                    
+                    const thumbnailContent = game.image 
+                        ? `<img src="${game.image}" alt="${game.title}">`
+                        : game.emoji || '🎮';
+                    
+                    gameCard.innerHTML = `
+                        <div class="live-players"><span class="dot"></span> ${Math.floor(Math.random() * 9000) + 1000}</div>
+                        <div class="thumbnail">${thumbnailContent}</div>
+                        <div class="game-info">
+                            <div class="game-title">${game.title}</div>
+                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                        </div>
+                    `;
+                    gamesGrid.appendChild(gameCard);
+                });
+            } catch (error) {
+                console.error('Error loading games:', error);
+                // Show default games on error
+                gamesGrid.innerHTML = `
+                    <div class="game-card" onclick="navigateGame('plinko.html')">
+                        <div class="live-players"><span class="dot"></span> 3,421</div>
+                        <div class="thumbnail">🟢</div>
+                        <div class="game-info">
+                            <div class="game-title">Plinko</div>
+                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                        </div>
+                    </div>
+                    <div class="game-card" onclick="navigateGame('crash.html')">
+                        <div class="live-players"><span class="dot"></span> 8,192</div>
+                        <div class="thumbnail">🚀</div>
+                        <div class="game-info">
+                            <div class="game-title">Crash</div>
+                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         // Initialize Call
         window.addEventListener('DOMContentLoaded', initializePlatform);
