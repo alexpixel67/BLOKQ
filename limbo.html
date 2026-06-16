@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ | Limbo</title>
+    <style>
+        /* CSS RESET & CASINO THEME */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-hover: #334155;
+            --accent-green: #00e701;
+            --accent-purple: #a855f7;
+            --text-main: #94a3b8;
+            --text-bright: #ffffff;
+            --border-color: #334155;
+            --border-radius: 12px;
+            --error-red: #ef4444;
+        }
+
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR / CONTROLS */
+        aside { width: 320px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); z-index: 5; }
+        .logo-back { font-size: 14px; font-weight: bold; color: var(--text-bright); cursor: pointer; text-decoration: none; margin-bottom: 10px; display: inline-block; }
+        
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-label { font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; color: var(--text-main); display: flex; justify-content: space-between; }
+        
+        .input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; align-items: center; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: var(--accent-purple); }
+        .input-wrapper input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; width: 100%; }
+        .input-suffix { padding-right: 15px; font-weight: bold; color: #64748b; font-size: 12px; }
+        .btn-mod { background: var(--bg-hover); border: none; color: white; width: 45px; height: 100%; font-weight: bold; cursor: pointer; border-left: 1px solid var(--border-color); transition: 0.2s; }
+        .btn-mod:hover { background: #475569; }
+
+        .btn-action { background: var(--accent-purple); color: #fff; border: none; padding: 18px; border-radius: 8px; font-weight: 900; font-size: 18px; text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3); width: 100%; margin-top: 10px; }
+        .btn-action:hover { background: #c084fc; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5); }
+        .btn-action:active { transform: translateY(1px); }
+        .btn-action:disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+        /* VIEWPORT */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0f172a; position: relative; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; z-index: 10; border-bottom: 1px solid var(--border-color); }
+        .header-title { font-size: 20px; font-weight: bold; color: white; }
+        .balance-box { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: bold; display: flex; gap: 8px; align-items: center; }
+        .balance-box span { color: var(--accent-green); }
+
+        /* PLAY AREA */
+        .play-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; position: relative; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); }
+        
+        .target-display { font-size: 16px; color: var(--text-main); font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .result-display { font-size: 140px; font-weight: 900; color: white; text-shadow: 0 10px 40px rgba(0,0,0,0.8); font-variant-numeric: tabular-nums; margin-bottom: 20px; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: baseline; }
+        .result-suffix { font-size: 60px; margin-left: 5px; color: rgba(255,255,255,0.5); }
+        
+        .result-display.win { color: var(--accent-green); transform: scale(1.1); text-shadow: 0 0 50px rgba(0, 231, 1, 0.3); }
+        .result-display.win .result-suffix { color: var(--accent-green); }
+        
+        .result-display.loss { color: var(--text-main); transform: scale(0.95); }
+        .result-display.loss .result-suffix { color: var(--text-main); }
+
+        .profit-display { font-size: 20px; font-weight: bold; color: var(--accent-green); opacity: 0; transform: translateY(10px); transition: 0.3s; }
+        .profit-display.show { opacity: 1; transform: translateY(0); }
+
+        /* RECENT HITS BAR */
+        .recent-hits { height: 50px; background: rgba(30, 41, 59, 0.8); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; }
+        .hit-pill { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; min-width: 60px; text-align: center; animation: popIn 0.2s ease-out forwards; }
+        .hit-pill.high { color: var(--accent-green); background: rgba(0, 231, 1, 0.1); border: 1px solid rgba(0, 231, 1, 0.2); }
+        .hit-pill.low { color: var(--text-main); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div>
+            <a href="home.html" class="logo-back">⬅ Return to Lobby</a>
+            <div class="header-title" style="margin-top: 5px;">📉 LIMBO</div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Bet Amount</label>
+            <div class="input-wrapper">
+                <input type="number" id="bet-amount" value="10" min="1">
+                <button class="btn-mod" id="bet-half-btn">½</button>
+                <button class="btn-mod" id="bet-double-btn">2x</button>
+            </div>
+        </div>
+
+        <div style="height: 1px; background: var(--border-color); margin: 10px 0;"></div>
+
+        <div class="control-group">
+            <label class="control-label">Target Multiplier</label>
+            <div class="input-wrapper">
+                <input type="number" id="target-input" value="2.00" step="0.01" min="1.01" max="1000000">
+                <div class="input-suffix">x</div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label">Win Chance</label>
+            <div class="input-wrapper">
+                <input type="number" id="chance-input" value="49.50" step="0.01" min="0.0001" max="98.00">
+                <div class="input-suffix">%</div>
+            </div>
+        </div>
+
+        <button class="btn-action" id="action-btn">Play Limbo</button>
+        
+        <div style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 10px;">
+            Set a target payout. If the generated number clears your target, you win exactly your target multiplier. The maximum possible payout is limitless.
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="header-title">UGC Limbo Hub</div>
+            <div class="balance-box">
+                <span id="bq-balance">Loading...</span> BQ
+            </div>
+        </header>
+
+        <div class="play-area">
+            <div class="target-display" id="target-display">Target: 2.00x</div>
+            
+            <div class="result-display" id="result-display">
+                <span id="result-number">1.00</span>
+                <span class="result-suffix">x</span>
+            </div>
+
+            <div class="profit-display" id="profit-display">+20 BQ</div>
+        </div>
+
+        <div class="recent-hits" id="recent-hits">
+            <!-- Limbo history injected here -->
+        </div>
+    </main>
+
+    <!-- FIREBASE AND LIMBO ENGINE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Global State
+        let auth = null, db = null, activeUser = null, activeUserRef = null;
+        let userBalance = 0;
+        
+        // Math Engine Constants (99% RTP / 1% House Edge)
+        const RTP_CONSTANT = 99.00;
+        
+        // Game State Variables
+        let targetMultiplier = 2.00;
+        let winChance = 49.50;
+
+        // UI Elements
+        const balanceDisplay = document.getElementById('bq-balance');
+        const betInput = document.getElementById('bet-amount');
+        const targetInput = document.getElementById('target-input');
+        const chanceInput = document.getElementById('chance-input');
+        const actionBtn = document.getElementById('action-btn');
+        
+        const targetDisplay = document.getElementById('target-display');
+        const resultDisplay = document.getElementById('result-display');
+        const resultNumber = document.getElementById('result-number');
+        const profitDisplay = document.getElementById('profit-display');
+        const recentHitsBar = document.getElementById('recent-hits');
+
+        // Modifiers
+        document.getElementById('bet-half-btn').onclick = () => betInput.value = Math.max(1, Math.floor(parseInt(betInput.value) / 2));
+        document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
+
+        // Init Firebase
+        async function initGame() {
+            try {
+                const response = await fetch('/api/config');
+                if (!response.ok) throw new Error("Config not loaded.");
+                const config = await response.json();
+
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, user => {
+                    if (!user) window.location.href = "login.html";
+                    else {
+                        activeUser = user;
+                        activeUserRef = doc(db, "users", user.uid);
+                        onSnapshot(activeUserRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                userBalance = docSnap.data().balance;
+                                balanceDisplay.innerText = userBalance.toLocaleString();
+                            }
+                        });
+                    }
+                });
+            } catch (err) { console.error(err); }
+
+            updateFromTarget(); // Initialize Math
+        }
+
+        // ==========================================
+        // MATH BINDINGS & SYNCHRONIZATION
+        // ==========================================
+        
+        function updateFromTarget() {
+            let val = parseFloat(targetInput.value);
+            if (isNaN(val)) return;
+            if (val < 1.01) val = 1.01;
+            
+            targetMultiplier = val;
+            winChance = RTP_CONSTANT / targetMultiplier;
+            
+            // Sync UI
+            chanceInput.value = winChance.toFixed(4);
+            targetDisplay.innerText = `Target: ${targetMultiplier.toFixed(2)}x`;
+        }
+
+        function updateFromChance() {
+            let val = parseFloat(chanceInput.value);
+            if (isNaN(val)) return;
+            if (val < 0.0001) val = 0.0001;
+            if (val > 98.00) val = 98.00;
+
+            winChance = val;
+            targetMultiplier = RTP_CONSTANT / winChance;
+            
+            // Sync UI
+            targetInput.value = targetMultiplier.toFixed(2);
+            targetDisplay.innerText = `Target: ${targetMultiplier.toFixed(2)}x`;
+        }
+
+        targetInput.addEventListener('change', updateFromTarget);
+        chanceInput.addEventListener('change', updateFromChance);
+
+        // ==========================================
+        // EXPONENTIAL MATHEMATICS & ROLL EXECUTION
+        // ==========================================
+        function generateLimboResult() {
+            // Standard crypto formula for an exponential multiplier curve
+            // It generates a float from 0 to 1, and inverts it.
+            const roll = Math.random();
+            if (roll < 0.01) return 1.00; // 1% House Edge instant crash
+            
+            const result = 0.99 / (1 - roll);
+            return Math.max(1.00, result);
+        }
+
+        actionBtn.addEventListener('click', async () => {
+            const betAmount = parseInt(betInput.value);
+            if (isNaN(betAmount) || betAmount <= 0) return alert("Invalid Bet");
+            if (betAmount > userBalance) return alert("Insufficient BQ Balance");
+
+            actionBtn.disabled = true;
+            profitDisplay.classList.remove('show');
+            resultDisplay.className = "result-display";
+
+            // Visual Scramble Effect (Juice)
+            let ticks = 0;
+            const scrambleInterval = setInterval(() => {
+                resultNumber.innerText = (Math.random() * 100).toFixed(2);
+                ticks++;
+                if (ticks > 5) {
+                    clearInterval(scrambleInterval);
+                    finalizeRoll(betAmount);
+                }
+            }, 30);
+        });
+
+        async function finalizeRoll(betAmount) {
+            const rollResult = generateLimboResult();
+            const isWin = rollResult >= targetMultiplier;
+            
+            // Format visually (e.g. show 1,000,000.00x nicely)
+            let displayVal = rollResult < 1000 ? rollResult.toFixed(2) : Math.floor(rollResult).toLocaleString();
+
+            const payoutAmount = isWin ? Math.floor(betAmount * targetMultiplier) : 0;
+            const netChange = payoutAmount - betAmount;
+
+            // Database Sync
+            await updateDoc(activeUserRef, { balance: userBalance + netChange });
+
+            // Render Final Result
+            resultNumber.innerText = displayVal;
+            resultDisplay.className = `result-display ${isWin ? 'win' : 'loss'}`;
+
+            if (isWin) {
+                profitDisplay.innerText = `+${payoutAmount.toLocaleString()} BQ`;
+                profitDisplay.classList.add('show');
+            }
+
+            appendRecentHit(rollResult, isWin);
+
+            actionBtn.disabled = false;
+        }
+
+        function appendRecentHit(val, isWin) {
+            const pill = document.createElement('div');
+            pill.className = `hit-pill ${isWin ? 'high' : 'low'}`;
+            
+            // Format large numbers for the pill
+            let formatVal = val < 1000 ? val.toFixed(2) : (val / 1000).toFixed(1) + 'k';
+            pill.innerText = `${formatVal}x`;
+            
+            recentHitsBar.insertBefore(pill, recentHitsBar.firstChild);
+            if (recentHitsBar.children.length > 20) recentHitsBar.removeChild(recentHitsBar.lastChild);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
