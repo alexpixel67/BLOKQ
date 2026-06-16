@@ -23,7 +23,7 @@
 
         /* SIDEBAR */
         aside { width: 260px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; }
-        .logo { font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; margin-bottom: 30px; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; margin-bottom: 30px; cursor: pointer; }
         .logo span { color: var(--accent-green); }
         
         .nav-menu { display: flex; flex-direction: column; gap: 8px; list-style: none; }
@@ -40,6 +40,14 @@
         .search-bar input:focus { border-color: var(--accent-cyan); }
         
         .user-info { display: flex; align-items: center; gap: 20px; }
+        
+        /* AUTH STATES */
+        .auth-section { display: none; align-items: center; gap: 20px; }
+        .unauth-section { display: flex; }
+
+        .btn-login-header { background: var(--accent-cyan); color: #000; font-weight: 900; font-size: 14px; padding: 12px 24px; border: none; border-radius: 30px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); text-transform: uppercase; }
+        .btn-login-header:hover { background: #38bdf8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5); }
+
         .balance { background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; font-weight: bold; display: flex; gap: 8px; align-items: center; color: white; }
         .balance span { color: var(--accent-green); }
         
@@ -91,7 +99,7 @@
 <body>
 
     <aside>
-        <div class="logo">🟩 BLOK<span>Q</span></div>
+        <div class="logo" onclick="window.location.href='index.html'">🟩 BLOK<span>Q</span></div>
         <ul class="nav-menu">
             <li class="active">🎮 Casino Lobby</li>
             <li>🔥 Originals</li>
@@ -106,20 +114,30 @@
                 <input type="text" placeholder="Search games...">
             </div>
             <div class="user-info">
-                <div class="balance">
-                    <span id="bq-balance">Loading...</span> BQ
-                </div>
                 
-                <div class="profile-container">
-                    <div class="profile-pic" id="user-profile-pic">?</div>
-                    <div class="profile-dropdown" id="profileDropdown">
-                        <div class="dropdown-header">
-                            <div class="dropdown-username" id="dropdown-username">Lobby Identity</div>
-                            <div class="dropdown-email" id="dropdown-email">Loading BQ ID...</div>
+                <!-- STATE 1: LOGGED OUT -->
+                <div class="unauth-section" id="unauth-section">
+                    <button class="btn-login-header" onclick="window.location.href='login.html'">Sign In / Register</button>
+                </div>
+
+                <!-- STATE 2: LOGGED IN -->
+                <div class="auth-section" id="auth-section">
+                    <div class="balance">
+                        <span id="bq-balance">...</span> BQ
+                    </div>
+                    
+                    <div class="profile-container">
+                        <div class="profile-pic" id="user-profile-pic">?</div>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="dropdown-header">
+                                <div class="dropdown-username" id="dropdown-username">Lobby Identity</div>
+                                <div class="dropdown-email" id="dropdown-email">Loading BQ ID...</div>
+                            </div>
+                            <button class="dropdown-btn" id="logout-btn">Disconnect Session</button>
                         </div>
-                        <button class="dropdown-btn" id="logout-btn">Disconnect Session</button>
                     </div>
                 </div>
+
             </div>
         </header>
 
@@ -129,7 +147,7 @@
                 <div class="hero-text">
                     <h1>BLOKQ Crash</h1>
                     <p>The ultimate test of nerves. Watch the multiplier rise exponentially and cash out before the rocket explodes. Play the flagship multiplayer game now.</p>
-                    <button class="btn-play-hero" onclick="window.location.href='crash.html'">Play Crash 🚀</button>
+                    <button class="btn-play-hero" onclick="navigateGame('crash.html')">Play Crash 🚀</button>
                 </div>
                 <div style="font-size: 120px; position: relative; z-index: 2; transform: rotate(15deg);">🚀</div>
             </div>
@@ -138,8 +156,7 @@
             <div class="section-title">⭐ BLOKQ Originals</div>
             <div class="grid">
                 
-                <!-- PLINKO -->
-                <div class="game-card" onclick="window.location.href='plinko.html'">
+                <div class="game-card" onclick="navigateGame('plinko.html')">
                     <div class="live-players"><span class="dot"></span> 3,421</div>
                     <div class="thumbnail">🟢</div>
                     <div class="game-info">
@@ -148,8 +165,7 @@
                     </div>
                 </div>
 
-                <!-- CRASH -->
-                <div class="game-card" onclick="window.location.href='crash.html'">
+                <div class="game-card" onclick="navigateGame('crash.html')">
                     <div class="live-players"><span class="dot"></span> 8,192</div>
                     <div class="thumbnail">🚀</div>
                     <div class="game-info">
@@ -158,8 +174,7 @@
                     </div>
                 </div>
 
-                <!-- MINES -->
-                <div class="game-card" onclick="window.location.href='mines.html'">
+                <div class="game-card" onclick="navigateGame('mines.html')">
                     <div class="live-players"><span class="dot"></span> 2,105</div>
                     <div class="thumbnail">💣</div>
                     <div class="game-info">
@@ -168,8 +183,7 @@
                     </div>
                 </div>
 
-                <!-- DICE -->
-                <div class="game-card" onclick="window.location.href='dice.html'">
+                <div class="game-card" onclick="navigateGame('dice.html')">
                     <div class="live-players"><span class="dot"></span> 1,844</div>
                     <div class="thumbnail">🎲</div>
                     <div class="game-info">
@@ -178,8 +192,7 @@
                     </div>
                 </div>
 
-                <!-- LIMBO -->
-                <div class="game-card" onclick="window.location.href='limbo.html'">
+                <div class="game-card" onclick="navigateGame('limbo.html')">
                     <div class="live-players"><span class="dot"></span> 4,022</div>
                     <div class="thumbnail">📉</div>
                     <div class="game-info">
@@ -201,8 +214,11 @@
         let auth = null;
         let db = null;
         let activeUserRef = null;
+        let isLoggedIn = false;
 
         // UI Elements
+        const authSection = document.getElementById('auth-section');
+        const unauthSection = document.getElementById('unauth-section');
         const bqBalanceDisplay = document.getElementById('bq-balance');
         const userProfilePic = document.getElementById('user-profile-pic');
         const profileDropdown = document.getElementById('profileDropdown');
@@ -211,33 +227,37 @@
 
         async function initializePlatform() {
             try {
-                // Fetch Firebase keys from Cloudflare edge
                 const response = await fetch('/api/config');
                 if (!response.ok) throw new Error("Could not retrieve config.");
                 const firebaseConfig = await response.json();
 
-                // Initialize Firebase
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
                 onAuthStateChanged(auth, handleAuthStateChange);
             } catch (error) {
-                console.error("Initialization Error:", error);
-                bqBalanceDisplay.innerText = "Error";
+                console.log("Firebase not initialized or running locally.");
             }
         }
 
         async function handleAuthStateChange(user) {
             if (!user) {
-                window.location.href = 'login.html';
+                // If not logged in, show the explore mode (Sign In button)
+                isLoggedIn = false;
+                unauthSection.style.display = 'flex';
+                authSection.style.display = 'none';
                 return;
             }
 
+            // If logged in, show their profile and balance
+            isLoggedIn = true;
+            unauthSection.style.display = 'none';
+            authSection.style.display = 'flex';
+
             activeUserRef = doc(db, "users", user.uid);
 
-            // Populate Dropdown Profile UI
-            dropdownUsername.innerText = user.displayName || "Genesis Account";
+            dropdownUsername.innerText = user.displayName || "Casino Player";
             dropdownEmail.innerText = user.email || "Web3 Session";
             
             if (user.photoURL) {
@@ -252,7 +272,6 @@
                 if (docSnapshot.exists()) {
                     bqBalanceDisplay.innerText = docSnapshot.data().balance.toLocaleString();
                 } else {
-                    // Provide the user with their starting balance
                     setDoc(activeUserRef, {
                         username: user.displayName || "Casino Player",
                         email: user.email || "No email",
@@ -262,6 +281,15 @@
                 }
             });
         }
+
+        // Gateway Guard: Redirects to login if they try to play a game while logged out
+        window.navigateGame = function(targetUrl) {
+            if (!isLoggedIn) {
+                window.location.href = 'login.html';
+            } else {
+                window.location.href = targetUrl;
+            }
+        };
 
         // Dropdown Menu Logic
         userProfilePic.addEventListener('click', (e) => {
@@ -274,7 +302,9 @@
         });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => { window.location.href = 'login.html'; });
+            signOut(auth).then(() => { 
+                window.location.reload(); 
+            });
         });
 
         // Initialize Call
