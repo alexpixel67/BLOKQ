@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ | Arcade Lobby</title>
+    <title>BLOKQ | Casino Lobby</title>
     <style>
         /* CSS RESET & VARIABLES */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -22,17 +22,14 @@
         body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
         /* SIDEBAR */
-        aside { width: 260px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); z-index: 10; }
-        .logo { font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
+        aside { width: 260px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; margin-bottom: 30px; }
         .logo span { color: var(--accent-green); }
         
-        .nav-menu { display: flex; flex-direction: column; gap: 8px; list-style: none; margin-top: 10px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; list-style: none; }
         .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
         .nav-menu li:hover, .nav-menu li.active { background: var(--bg-hover); color: var(--text-bright); }
         .nav-menu li.active { border-left: 4px solid var(--accent-cyan); border-radius: 4px 8px 8px 4px; }
-        
-        .btn-create-lobby { margin-top: auto; background: var(--accent-cyan); color: #000; padding: 15px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); }
-        .btn-create-lobby:hover { background: #38bdf8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5); }
 
         /* MAIN CONTENT */
         main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%); }
@@ -96,18 +93,17 @@
     <aside>
         <div class="logo">🟩 BLOK<span>Q</span></div>
         <ul class="nav-menu">
-            <li class="active">🎮 Discover Lobby</li>
-            <li>🔥 Trending UGC</li>
+            <li class="active">🎮 Casino Lobby</li>
+            <li>🔥 Originals</li>
             <li>🏆 Global Rankings</li>
             <li>💰 My Wallet</li>
         </ul>
-        <button class="btn-create-lobby" onclick="window.location.href='create.html'">Studio / Creator</button>
     </aside>
 
     <main>
         <header>
             <div class="search-bar">
-                <input type="text" placeholder="Search arcade worlds...">
+                <input type="text" placeholder="Search games...">
             </div>
             <div class="user-info">
                 <div class="balance">
@@ -193,14 +189,6 @@
                 </div>
 
             </div>
-
-            <!-- COMMUNITY UGC SECTION -->
-            <div class="section-title" style="margin-top: 20px;">🔥 Community Worlds (UGC)</div>
-            <div class="grid" id="games-grid">
-                <!-- User-created games from Firestore appear here dynamically -->
-                <div style="grid-column: 1/-1; color: var(--text-muted); padding: 20px 0;">Loading active UGC worlds...</div>
-            </div>
-
         </div>
     </main>
 
@@ -208,7 +196,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let auth = null;
         let db = null;
@@ -220,7 +208,6 @@
         const profileDropdown = document.getElementById('profileDropdown');
         const dropdownUsername = document.getElementById('dropdown-username');
         const dropdownEmail = document.getElementById('dropdown-email');
-        const gamesGrid = document.getElementById('games-grid');
 
         async function initializePlatform() {
             try {
@@ -265,57 +252,15 @@
                 if (docSnapshot.exists()) {
                     bqBalanceDisplay.innerText = docSnapshot.data().balance.toLocaleString();
                 } else {
+                    // Provide the user with their starting balance
                     setDoc(activeUserRef, {
-                        username: user.displayName || "Genesis Creator",
+                        username: user.displayName || "Casino Player",
                         email: user.email || "No email",
                         balance: 10000,
                         createdAt: new Date()
                     });
                 }
             });
-
-            bindDynamicGamesLobby();
-        }
-
-        // Fetch user-created games from Firestore
-        function bindDynamicGamesLobby() {
-            const gamesQuery = query(collection(db, "games"), orderBy("createdAt", "desc"));
-            
-            onSnapshot(gamesQuery, (querySnapshot) => {
-                gamesGrid.innerHTML = "";
-                
-                if (querySnapshot.empty) {
-                    gamesGrid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); padding: 20px 0;">No active UGC worlds found. Head to the Studio to deploy the first!</div>`;
-                    return;
-                }
-                
-                querySnapshot.forEach((doc) => {
-                    const game = doc.data();
-                    const card = document.createElement('div');
-                    card.className = "game-card";
-                    
-                    // Map UGC game types to the correct engine URL
-                    let targetUrl = "home.html";
-                    if (game.type === 'climb' || game.type === 'crash') targetUrl = "crash.html";
-                    if (game.type === 'grid' || game.type === 'mines') targetUrl = "mines.html";
-                    if (game.type === 'wheel') targetUrl = "plinko.html"; // Placeholder if you make a wheel later
-
-                    card.innerHTML = `
-                        <div class="live-players"><span class="dot"></span> ${Math.floor(Math.random() * 50 + 1)}</div>
-                        <div class="thumbnail">${game.emoji || '🎮'}</div>
-                        <div class="game-info">
-                            <div class="game-title">${escapeHTML(game.title)}</div>
-                            <div class="game-creator">by ${escapeHTML(game.creator)}</div>
-                        </div>
-                    `;
-                    card.addEventListener('click', () => window.location.href = targetUrl);
-                    gamesGrid.appendChild(card);
-                });
-            });
-        }
-
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
         }
 
         // Dropdown Menu Logic
@@ -324,7 +269,9 @@
             profileDropdown.classList.toggle('active');
         });
 
-        document.addEventListener('click', () => { profileDropdown.classList.remove('active'); });
+        document.addEventListener('click', () => { 
+            profileDropdown.classList.remove('active'); 
+        });
 
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).then(() => { window.location.href = 'login.html'; });
