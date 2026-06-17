@@ -275,61 +275,11 @@
                 const querySnapshot = await getDocs(gamesQuery);
 
                 if (querySnapshot.empty) {
-                    // Seed default games into Firestore if none exist
-                    const defaultGames = [
-                        { title: "Plinko", page: "plinko.html", emoji: "🟢", category: "originals" },
-                        { title: "Crash", page: "crash.html", emoji: "🚀", category: "originals" },
-                        { title: "Mines", page: "mines.html", emoji: "💣", category: "originals" },
-                        { title: "Dice", page: "dice.html", emoji: "🎲", category: "originals" },
-                        { title: "Limbo", page: "limbo.html", emoji: "📉", category: "originals" }
-                    ];
-
-                    // Add default games to Firestore
-                    for (const game of defaultGames) {
-                        await setDoc(doc(db, "games", game.page), game);
-                    }
-
-                    // Render default games immediately
+                    // No default games - show empty state
                     gamesGrid.innerHTML = `
-                        <div class="game-card" onclick="navigateGame('plinko.html')">
-                            <div class="live-players"><span class="dot"></span> 3,421</div>
-                            <div class="thumbnail">🟢</div>
-                            <div class="game-info">
-                                <div class="game-title">Plinko</div>
-                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                            </div>
-                        </div>
-                        <div class="game-card" onclick="navigateGame('crash.html')">
-                            <div class="live-players"><span class="dot"></span> 8,192</div>
-                            <div class="thumbnail">🚀</div>
-                            <div class="game-info">
-                                <div class="game-title">Crash</div>
-                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                            </div>
-                        </div>
-                        <div class="game-card" onclick="navigateGame('mines.html')">
-                            <div class="live-players"><span class="dot"></span> 2,105</div>
-                            <div class="thumbnail">💣</div>
-                            <div class="game-info">
-                                <div class="game-title">Mines</div>
-                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                            </div>
-                        </div>
-                        <div class="game-card" onclick="navigateGame('dice.html')">
-                            <div class="live-players"><span class="dot"></span> 1,844</div>
-                            <div class="thumbnail">🎲</div>
-                            <div class="game-info">
-                                <div class="game-title">Dice</div>
-                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                            </div>
-                        </div>
-                        <div class="game-card" onclick="navigateGame('limbo.html')">
-                            <div class="live-players"><span class="dot"></span> 4,022</div>
-                            <div class="thumbnail">📉</div>
-                            <div class="game-info">
-                                <div class="game-title">Limbo</div>
-                                <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                            </div>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                            <h2 style="color: var(--text-bright); margin-bottom: 15px;">No Games Available</h2>
+                            <p style="color: var(--text-main);">An admin needs to add games from the Admin Center.</p>
                         </div>
                     `;
                     return;
@@ -358,23 +308,11 @@
                 });
             } catch (error) {
                 console.error('Error loading games:', error);
-                // Show default games on error
+                // Show empty state on error
                 gamesGrid.innerHTML = `
-                    <div class="game-card" onclick="navigateGame('plinko.html')">
-                        <div class="live-players"><span class="dot"></span> 3,421</div>
-                        <div class="thumbnail">🟢</div>
-                        <div class="game-info">
-                            <div class="game-title">Plinko</div>
-                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                        </div>
-                    </div>
-                    <div class="game-card" onclick="navigateGame('crash.html')">
-                        <div class="live-players"><span class="dot"></span> 8,192</div>
-                        <div class="thumbnail">🚀</div>
-                        <div class="game-info">
-                            <div class="game-title">Crash</div>
-                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                        </div>
+                    <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                        <h2 style="color: var(--text-bright); margin-bottom: 15px;">Unable to Load Games</h2>
+                        <p style="color: var(--text-main);">Please check your connection or contact an admin.</p>
                     </div>
                 `;
             }
