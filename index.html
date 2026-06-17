@@ -196,12 +196,17 @@
 
         async function handleAuthStateChange(user) {
             if (!user) {
+                // If not logged in, show the explore mode (Sign In button)
                 isLoggedIn = false;
                 unauthSection.style.display = 'flex';
                 authSection.style.display = 'none';
+                
+                // FIXED: Execute loadGames for guest explorers [6]
+                loadGames();
                 return;
             }
 
+            // If logged in, show their profile and balance
             isLoggedIn = true;
             unauthSection.style.display = 'none';
             authSection.style.display = 'flex';
@@ -236,8 +241,10 @@
             loadGames();
         }
 
+        // Gateway Guard: Redirects to login if they try to play a game while logged out
         window.navigateGame = function(targetUrl) {
             if (!isLoggedIn) {
+                // Save the intended destination so we can redirect back after login
                 window.location.href = 'login.html?redirect=' + encodeURIComponent(targetUrl);
             } else {
                 window.location.href = targetUrl;
@@ -267,6 +274,7 @@
                 const querySnapshot = await getDocs(gamesQuery);
 
                 if (querySnapshot.empty) {
+                    // No default games - show empty state
                     gamesGrid.innerHTML = `
                         <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
                             <h2 style="color: var(--text-bright); margin-bottom: 15px;">No Games Available</h2>
@@ -287,7 +295,6 @@
                         ? `<img src="${game.image}" alt="${game.title}">`
                         : game.emoji || '🎮';
                     
-                    // Appends card cleanly with only the image and player count overlay [3]
                     gameCard.innerHTML = `
                         <div class="live-players"><span class="dot"></span> ${Math.floor(Math.random() * 9000) + 1000}</div>
                         <div class="thumbnail">${thumbnailContent}</div>
@@ -296,6 +303,7 @@
                 });
             } catch (error) {
                 console.error('Error loading games:', error);
+                // Show empty state on error
                 gamesGrid.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
                         <h2 style="color: var(--text-bright); margin-bottom: 15px;">Unable to Load Games</h2>
@@ -305,6 +313,7 @@
             }
         }
 
+        // Initialize Call
         window.addEventListener('DOMContentLoaded', initializePlatform);
     </script>
 </body>
