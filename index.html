@@ -82,20 +82,14 @@
         .section-title { margin-bottom: 20px; font-size: 20px; color: white; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; margin-bottom: 50px; }
         
-        .game-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; }
+        .game-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; cursor: pointer; transition: 0.2s; position: relative; display: flex; flex-direction: column; }
         .game-card:hover { transform: translateY(-5px); border-color: var(--accent-cyan); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .game-card:hover .thumbnail { background: #233248; }
         
-        /* 4:3 Aspect ratio applied here to prevent stretching */
         .thumbnail { width: 100%; aspect-ratio: 4 / 3; background: #182333; display: flex; justify-content: center; align-items: center; font-size: 65px; transition: 0.2s; overflow: hidden; }
         .thumbnail img { width: 100%; height: 100%; object-fit: cover; }
         
-        .game-info { padding: 18px; }
-        .game-title { font-weight: bold; font-size: 16px; color: white; margin-bottom: 6px; }
-        .game-creator { font-size: 12px; color: var(--text-main); display: flex; justify-content: space-between; }
-        
-        .badge-official { background: rgba(0, 231, 1, 0.1); color: var(--accent-green); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .live-players { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; color: white; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); }
+        .live-players { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; color: white; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); z-index: 3; }
         .dot { height: 8px; width: 8px; background: var(--accent-green); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--accent-green); }
     </style>
 </head>
@@ -202,14 +196,12 @@
 
         async function handleAuthStateChange(user) {
             if (!user) {
-                // If not logged in, show the explore mode (Sign In button)
                 isLoggedIn = false;
                 unauthSection.style.display = 'flex';
                 authSection.style.display = 'none';
                 return;
             }
 
-            // If logged in, show their profile and balance
             isLoggedIn = true;
             unauthSection.style.display = 'none';
             authSection.style.display = 'flex';
@@ -244,10 +236,8 @@
             loadGames();
         }
 
-        // Gateway Guard: Redirects to login if they try to play a game while logged out
         window.navigateGame = function(targetUrl) {
             if (!isLoggedIn) {
-                // Save the intended destination so we can redirect back after login
                 window.location.href = 'login.html?redirect=' + encodeURIComponent(targetUrl);
             } else {
                 window.location.href = targetUrl;
@@ -277,7 +267,6 @@
                 const querySnapshot = await getDocs(gamesQuery);
 
                 if (querySnapshot.empty) {
-                    // No default games - show empty state
                     gamesGrid.innerHTML = `
                         <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
                             <h2 style="color: var(--text-bright); margin-bottom: 15px;">No Games Available</h2>
@@ -298,19 +287,15 @@
                         ? `<img src="${game.image}" alt="${game.title}">`
                         : game.emoji || '🎮';
                     
+                    // Appends card cleanly with only the image and player count overlay [3]
                     gameCard.innerHTML = `
                         <div class="live-players"><span class="dot"></span> ${Math.floor(Math.random() * 9000) + 1000}</div>
                         <div class="thumbnail">${thumbnailContent}</div>
-                        <div class="game-info">
-                            <div class="game-title">${game.title}</div>
-                            <div class="game-creator">by BLOKQ <span class="badge-official">Official</span></div>
-                        </div>
                     `;
                     gamesGrid.appendChild(gameCard);
                 });
             } catch (error) {
                 console.error('Error loading games:', error);
-                // Show empty state on error
                 gamesGrid.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
                         <h2 style="color: var(--text-bright); margin-bottom: 15px;">Unable to Load Games</h2>
@@ -320,7 +305,6 @@
             }
         }
 
-        // Initialize Call
         window.addEventListener('DOMContentLoaded', initializePlatform);
     </script>
 </body>
