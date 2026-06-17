@@ -87,6 +87,7 @@
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         .form-group label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .form-group input, .form-group select { background: var(--bg-dark); border: 1px solid var(--border-color); color: white; padding: 12px 16px; border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
+
         .form-group input:focus, .form-group select:focus { border-color: var(--accent-cyan); }
         .form-group.full-width { grid-column: 1 / -1; }
 
@@ -207,7 +208,7 @@
                                 </select>
                             </div>
                             <div class="form-group full-width">
-                                <label>Game Image (Recommended: 400x300px, PNG/JPG, max 500KB)</label>
+                                <label>Game Image (Recommended: 400x300px, PNG/JPG)</label>
                                 <div class="upload-area" id="upload-area">
                                     <div class="upload-icon" id="up-icon">📁</div>
                                     <div class="upload-text" id="up-text">Drag & drop image here or click to browse</div>
@@ -396,12 +397,6 @@
         });
 
         async function uploadImageToCloudinary(file) {
-            // Verify file size locally first (Limit to 500KB)
-            if (file.size > 500 * 1024) {
-                showNotification('File exceeds size limit! Max size allowed is 500KB', 'error');
-                return;
-            }
-
             // Set loading spinner state on the upload box
             upIcon.className = "spinner";
             upIcon.innerText = "";
@@ -468,7 +463,7 @@
                 page: document.getElementById('game-page').value,
                 emoji: document.getElementById('game-emoji').value || '🎮',
                 category: document.getElementById('game-category').value,
-                image: uploadedImageUrl, // Save CDN URL to database instead of base64 [1, 2]
+                image: uploadedImageUrl, // Save CDN URL to database [1, 2]
                 updatedAt: new Date()
             };
 
