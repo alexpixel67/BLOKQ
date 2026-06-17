@@ -275,7 +275,21 @@
                 const querySnapshot = await getDocs(gamesQuery);
 
                 if (querySnapshot.empty) {
-                    // Default games if no custom games are added
+                    // Seed default games into Firestore if none exist
+                    const defaultGames = [
+                        { title: "Plinko", page: "plinko.html", emoji: "🟢", category: "originals" },
+                        { title: "Crash", page: "crash.html", emoji: "🚀", category: "originals" },
+                        { title: "Mines", page: "mines.html", emoji: "💣", category: "originals" },
+                        { title: "Dice", page: "dice.html", emoji: "🎲", category: "originals" },
+                        { title: "Limbo", page: "limbo.html", emoji: "📉", category: "originals" }
+                    ];
+
+                    // Add default games to Firestore
+                    for (const game of defaultGames) {
+                        await setDoc(doc(db, "games", game.page), game);
+                    }
+
+                    // Render default games immediately
                     gamesGrid.innerHTML = `
                         <div class="game-card" onclick="navigateGame('plinko.html')">
                             <div class="live-players"><span class="dot"></span> 3,421</div>
