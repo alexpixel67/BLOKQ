@@ -141,27 +141,6 @@
             border-color: var(--accent-cyan);
         }
 
-        /* PASSWORD / MAGIC LINK TOGGLE */
-        .form-helper {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            margin-bottom: 20px;
-        }
-        .form-helper a {
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .form-helper label {
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-
         .btn-submit {
             width: 100%;
             background: var(--accent-green);
@@ -175,6 +154,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             transition: 0.2s;
+            margin-top: 10px;
         }
         .btn-submit:hover {
             box-shadow: 0 0 15px rgba(0, 231, 1, 0.4);
@@ -324,14 +304,6 @@
                     <input type="password" id="password-field" placeholder="••••••••" required>
                 </div>
 
-                <div class="form-helper">
-                    <label>
-                        <input type="checkbox" id="magic-link-check">
-                        Use Passwordless Magic Link
-                    </label>
-                    <a href="#" id="forgot-link">Forgot Password?</a>
-                </div>
-
                 <button type="submit" class="btn-submit" id="submit-btn">Authorize Session</button>
             </form>
 
@@ -386,7 +358,7 @@
     <!-- MODULE-BASED FIREBASE CONTROLLER -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let authInstance = null;
@@ -397,7 +369,6 @@
         const tabWalletBtn = document.getElementById('tab-wallet-btn');
         const emailTab = document.getElementById('email-tab');
         const walletTab = document.getElementById('wallet-tab');
-        const magicLinkCheck = document.getElementById('magic-link-check');
         const emailLoginForm = document.getElementById('email-login-form');
 
         // Tab Switching Logic
@@ -413,27 +384,6 @@
             tabEmailBtn.classList.remove('active');
             walletTab.classList.add('active');
             emailTab.classList.remove('active');
-        });
-
-        // Toggle Magic Link Input Modification
-        magicLinkCheck.addEventListener('change', () => {
-            const isMagicLink = magicLinkCheck.checked;
-            const passwordGroup = document.getElementById('password-group');
-            const passwordInput = document.getElementById('password-field');
-            const forgotLink = document.getElementById('forgot-link');
-            const submitBtn = document.getElementById('submit-btn');
-
-            if (isMagicLink) {
-                passwordGroup.style.display = 'none';
-                passwordInput.removeAttribute('required');
-                forgotLink.style.display = 'none';
-                submitBtn.innerText = "Send Magic Link";
-            } else {
-                passwordGroup.style.display = 'block';
-                passwordInput.setAttribute('required', 'true');
-                forgotLink.style.display = 'block';
-                submitBtn.innerText = "Authorize Session";
-            }
         });
 
         // Initialize Firebase SDK dynamically using Cloudflare Function
@@ -510,7 +460,7 @@
                 const result = await signInWithPopup(authInstance, provider);
                 const user = result.user;
 
-                // Check if user document exists, if not create with role: 'user'
+                // Check if user document exists, if not create with role: 'user' and balance: 10000 [1.1.2]
                 const userRef = doc(dbInstance, 'users', user.uid);
                 const userSnap = await getDoc(userRef);
                 
@@ -518,6 +468,7 @@
                     await setDoc(userRef, {
                         email: user.email,
                         displayName: user.displayName || user.email.split('@')[0],
+                        balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
                         role: 'user',
                         createdAt: new Date().toISOString()
                     });
@@ -534,7 +485,7 @@
             }
         }
 
-        // Simulated email/password path with Firestore user creation
+        // Real email/password sign-in and sign-up handlers [1.1.2]
         emailLoginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const emailValue = document.getElementById('email-field').value;
@@ -549,46 +500,55 @@
 
             try {
                 overlay.style.display = 'flex';
-                syncText.innerText = "Creating secure identity...";
+                syncText.innerText = "Authorizing identity...";
 
-                // Try to create user with email/password
-                const userCredential = await createUserWithEmailAndPassword(authInstance, emailValue, passwordValue);
-                const user = userCredential.user;
+                // 1. Try to sign in first (Standard Stake flow) [1.1.2]
+                try {
+                    const userCredential = await signInWithEmailAndPassword(authInstance, emailValue, passwordValue);
+                    const user = userCredential.user;
+                    
+                    // Double check document has balance
+                    const userRef = doc(dbInstance, 'users', user.uid);
+                    const userSnap = await getDoc(userRef);
+                    if (!userSnap.exists()) {
+                        await setDoc(userRef, {
+                            email: user.email,
+                            displayName: emailValue.split('@')[0],
+                            balance: 10000,
+                            role: 'user',
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                    
+                    executeAuthenticationProcess(user.displayName || emailValue.split('@')[0]);
+                } catch (signInError) {
+                    // 2. If the user doesn't exist, automatically sign them up! [1.1.2]
+                    if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
+                        syncText.innerText = "Creating secure identity...";
+                        
+                        const userCredential = await createUserWithEmailAndPassword(authInstance, emailValue, passwordValue);
+                        const user = userCredential.user;
 
-                // Create user document in Firestore with role: 'user'
-                await setDoc(doc(dbInstance, 'users', user.uid), {
-                    email: user.email,
-                    displayName: emailValue.split('@')[0],
-                    role: 'user',
-                    createdAt: new Date().toISOString()
-                });
+                        // Create user document with starting balance to avoid database crash [1.1.2]
+                        await setDoc(doc(dbInstance, 'users', user.uid), {
+                            email: user.email,
+                            displayName: emailValue.split('@')[0],
+                            balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
+                            role: 'user',
+                            createdAt: new Date().toISOString()
+                        });
 
-                const derivedUsername = emailValue.split('@')[0];
-                executeAuthenticationProcess(derivedUsername);
+                        const derivedUsername = emailValue.split('@')[0];
+                        executeAuthenticationProcess(derivedUsername);
+                    } else {
+                        throw signInError;
+                    }
+                }
 
             } catch (error) {
-                console.error("Email Auth Failed:", error);
+                console.error("Auth Failed:", error);
                 overlay.style.display = 'none';
-                
-                // If user already exists, try to sign in instead
-                if (error.code === 'auth/email-already-in-use') {
-                    syncText.innerText = "Identity found, signing in...";
-                    overlay.style.display = 'flex';
-                    
-                    try {
-                        // For existing users, we simulate login since we don't have signInWithPassword here
-                        // In production, you'd use signInWithEmailAndPassword
-                        setTimeout(() => {
-                            sessionStorage.setItem('blokq_logged_in', emailValue.split('@')[0]);
-                            window.location.href = 'index.html';
-                        }, 1500);
-                    } catch (signInError) {
-                        alert(`Sign in failed: ${signInError.message}`);
-                        overlay.style.display = 'none';
-                    }
-                } else {
-                    alert(`Auth Failed: ${error.message}`);
-                }
+                alert(`Auth Failed: ${error.message}`);
             }
         });
 
@@ -620,12 +580,13 @@
                 if (event.data === `oauth-success-${provider}`) {
                     window.removeEventListener('message', handleMsg);
                     
-                    // Create user document in Firestore for OAuth providers
+                    // Create user document in Firestore for OAuth providers with balance [1.1.2]
                     if (dbInstance) {
                         const fakeUid = provider.toLowerCase() + '_' + Date.now();
                         await setDoc(doc(dbInstance, 'users', fakeUid), {
                             email: `${provider.toLowerCase()}@${provider.toLowerCase()}.com`,
                             displayName: `${provider}_User`,
+                            balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
                             role: 'user',
                             provider: provider,
                             createdAt: new Date().toISOString()
@@ -654,12 +615,13 @@
             );
 
             if (signRequest) {
-                // Create user document in Firestore for wallet providers
+                // Create user document in Firestore for wallet providers with balance [1.1.2]
                 if (dbInstance) {
                     const fakeUid = walletType.toLowerCase().replace(' ', '_') + '_' + Date.now();
                     await setDoc(doc(dbInstance, 'users', fakeUid), {
                         email: `${walletType.toLowerCase()}@wallet.com`,
                         displayName: `${walletType}_Holder`,
+                        balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
                         role: 'user',
                         provider: walletType,
                         walletAddress: address,
