@@ -107,32 +107,6 @@
             margin-right: auto;
         }
 
-        .btn-make-admin {
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
-            color: var(--bg-dark);
-            border: none;
-            padding: 16px 40px;
-            border-radius: 30px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-make-admin:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(14, 165, 233, 0.5);
-        }
-
-        .btn-make-admin:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         /* GAME MANAGEMENT SECTION */
         .game-management {
             background: var(--bg-panel);
@@ -430,8 +404,7 @@
             <!-- NOT AUTHORIZED VIEW -->
             <div id="not-authorized-view" class="admin-not-authorized" style="display: none;">
                 <h2>🔒 Admin Access Required</h2>
-                <p>You need administrator privileges to access this section. Click the button below to request admin access.</p>
-                <button class="btn-make-admin" id="btn-make-admin">Make Myself Admin</button>
+                <p>You need administrator privileges to access this section. Please contact an existing admin to grant you access.</p>
             </div>
 
             <!-- ADMIN PANEL VIEW -->
@@ -498,7 +471,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion, collection, addDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion, collection, addDoc, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let auth = null;
         let db = null;
@@ -517,7 +490,6 @@
         const adminStatus = document.getElementById('admin-status');
         const notAuthorizedView = document.getElementById('not-authorized-view');
         const adminPanelView = document.getElementById('admin-panel-view');
-        const btnMakeAdmin = document.getElementById('btn-make-admin');
         const notification = document.getElementById('notification');
 
         async function initializePlatform() {
@@ -596,45 +568,14 @@
                 adminPanelView.style.display = 'block';
                 loadGames();
             } else {
+                // Non-admin users are redirected to index.html immediately
                 adminStatus.innerText = 'User';
                 adminStatus.style.background = 'var(--bg-hover)';
-                notAuthorizedView.style.display = 'block';
-                adminPanelView.style.display = 'none';
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 100);
             }
         }
-
-        // Make myself admin button
-        btnMakeAdmin.addEventListener('click', async () => {
-            if (!currentUser) {
-                showNotification('Please log in first', 'error');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            btnMakeAdmin.disabled = true;
-            btnMakeAdmin.innerText = 'Processing...';
-
-            try {
-                const userRef = doc(db, "users", currentUser.uid);
-                await setDoc(userRef, {
-                    username: currentUser.displayName || currentUser.email.split('@')[0],
-                    email: currentUser.email || "No email",
-                    balance: 10000,
-                    role: 'admin',
-                    createdAt: new Date()
-                }, { merge: true });
-
-                showNotification('✅ You are now an administrator!', 'success');
-                isAdmin = true;
-                updateAdminView();
-            } catch (error) {
-                console.error('Error setting admin role:', error);
-                showNotification('Failed to set admin role. Please try again.', 'error');
-            } finally {
-                btnMakeAdmin.disabled = false;
-                btnMakeAdmin.innerText = 'Make Myself Admin';
-            }
-        });
 
         // Upload area handling
         const uploadArea = document.getElementById('upload-area');
@@ -693,7 +634,7 @@
             uploadArea.style.display = 'block';
         });
 
-        // Game form submission
+        // Game form submission - handles both add and update
         const gameForm = document.getElementById('game-form');
         gameForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -704,12 +645,26 @@
                 emoji: document.getElementById('game-emoji').value || '🎮',
                 category: document.getElementById('game-category').value,
                 image: uploadedImageBase64,
-                createdAt: new Date()
+                updatedAt: new Date()
             };
 
             try {
-                await addDoc(collection(db, "games"), gameData);
-                showNotification('Game saved successfully!', 'success');
+                // Check if we're editing an existing game
+                const editId = gameForm.dataset.editId;
+                
+                if (editId) {
+                    // Update existing game
+                    await updateDoc(doc(db, "games", editId), gameData);
+                    showNotification('Game updated successfully!', 'success');
+                    // Clear the edit mode
+                    delete gameForm.dataset.editId;
+                } else {
+                    // Add new game
+                    gameData.createdAt = new Date();
+                    await addDoc(collection(db, "games"), gameData);
+                    showNotification('Game saved successfully!', 'success');
+                }
+                
                 gameForm.reset();
                 uploadedImageBase64 = null;
                 imagePreview.style.display = 'none';
@@ -765,7 +720,7 @@
             if (!confirm('Are you sure you want to delete this game?')) return;
 
             try {
-                // Note: You'll need to import deleteDoc for this to work
+                await deleteDoc(doc(db, "games", gameId));
                 showNotification('Game deleted!', 'success');
                 loadGames();
             } catch (error) {
@@ -774,9 +729,45 @@
             }
         };
 
-        // Edit game (placeholder)
-        window.editGame = (gameId) => {
-            showNotification('Edit functionality coming soon!', 'success');
+        // Edit game - loads data into form for editing
+        window.editGame = async (gameId) => {
+            try {
+                const gameDoc = await getDoc(doc(db, "games", gameId));
+                if (!gameDoc.exists()) {
+                    showNotification('Game not found', 'error');
+                    return;
+                }
+                
+                const game = gameDoc.data();
+                
+                // Fill form with existing data
+                document.getElementById('game-title').value = game.title;
+                document.getElementById('game-page').value = game.page;
+                document.getElementById('game-emoji').value = game.emoji || '';
+                document.getElementById('game-category').value = game.category || 'originals';
+                
+                // Handle image
+                if (game.image) {
+                    uploadedImageBase64 = game.image;
+                    previewImg.src = game.image;
+                    imagePreview.style.display = 'block';
+                    uploadArea.style.display = 'none';
+                } else {
+                    uploadedImageBase64 = null;
+                    imagePreview.style.display = 'none';
+                    uploadArea.style.display = 'block';
+                }
+                
+                // Store the current editing ID
+                gameForm.dataset.editId = gameId;
+                
+                // Scroll to form
+                document.querySelector('.game-management').scrollIntoView({ behavior: 'smooth' });
+                showNotification('Edit the game details and click Save', 'success');
+            } catch (error) {
+                console.error('Error loading game for edit:', error);
+                showNotification('Failed to load game data', 'error');
+            }
         };
 
         // Notification system
