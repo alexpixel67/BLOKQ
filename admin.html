@@ -99,7 +99,8 @@
         .game-item { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--border-radius); overflow: hidden; transition: 0.2s; }
         .game-item:hover { border-color: var(--accent-cyan); }
         
-        .game-item-image { width: 100%; height: 180px; background: #182333; display: flex; justify-content: center; align-items: center; font-size: 65px; overflow: hidden; }
+        /* Enforces uniform 4:3 aspect ratio inside lists too */
+        .game-item-image { width: 100%; aspect-ratio: 4 / 3; background: #182333; display: flex; justify-content: center; align-items: center; font-size: 65px; overflow: hidden; }
         .game-item-image img { width: 100%; height: 100%; object-fit: cover; }
 
         .game-item-info { padding: 18px; }
@@ -215,9 +216,13 @@
                                     <div class="upload-hint" id="up-hint">Recommended dimensions: 400x300 pixels (4:3 aspect ratio)</div>
                                     <input type="file" id="game-image-input" class="upload-input" accept="image/png,image/jpeg,image/jpg">
                                 </div>
+                                
+                                <!-- Adjusted preview image container with the correct aspect ratio constraints -->
                                 <div id="image-preview" style="display: none; margin-top: 15px;">
-                                    <img id="preview-img" src="" alt="Preview" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color);">
-                                    <button type="button" id="remove-image" style="margin-top: 10px; background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
+                                    <img id="preview-img" src="" alt="Preview" style="width: 100%; max-width: 280px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <div>
+                                        <button type="button" id="remove-image" style="margin-top: 10px; background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
