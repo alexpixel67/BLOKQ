@@ -358,7 +358,7 @@
     <!-- MODULE-BASED FIREBASE CONTROLLER -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let authInstance = null;
@@ -386,21 +386,18 @@
             emailTab.classList.remove('active');
         });
 
-        // Initialize Firebase SDK dynamically using Cloudflare Function
+        // Initialize Firebase SDK dynamically
         async function initializeSecurityBroker() {
             try {
-                // Fetch credentials dynamically from Cloudflare Pages Function
                 const response = await fetch('/api/config');
                 if (!response.ok) throw new Error("Could not retrieve config from edge server.");
                 
                 const firebaseConfig = await response.json();
                 
-                // Initialize Firebase Web SDK
                 const app = initializeApp(firebaseConfig);
                 authInstance = getAuth(app);
                 dbInstance = getFirestore(app);
 
-                // Attach genuine auth behavior once initialized
                 document.getElementById('google-auth-btn').addEventListener('click', handleGoogleAuth);
             } catch (error) {
                 console.error("Configuration Error:", error);
@@ -409,7 +406,6 @@
             }
         }
 
-        // Shared authentication animation logic
         function executeAuthenticationProcess(finalUsername) {
             const overlay = document.getElementById('sync-overlay');
             const syncText = document.getElementById('sync-text');
@@ -432,7 +428,6 @@
             setTimeout(() => {
                 sessionStorage.setItem('blokq_logged_in', finalUsername);
                 
-                // Check for redirect parameter and navigate to the intended game
                 const urlParams = new URLSearchParams(window.location.search);
                 const redirectUrl = urlParams.get('redirect');
                 
@@ -444,7 +439,6 @@
             }, 2400);
         }
 
-        // Handle Genuine Google Authentication (Real Integration)
         async function handleGoogleAuth() {
             if (!authInstance) return;
 
@@ -456,11 +450,10 @@
                 overlay.style.display = 'flex';
                 syncText.innerText = "Awaiting Google signature...";
 
-                // Execute real Firebase Google OAuth Popup
                 const result = await signInWithPopup(authInstance, provider);
                 const user = result.user;
 
-                // Check if user document exists, if not create with role: 'user' and balance: 10000 [1.1.2]
+                // Google emails are pre-verified, so we proceed directly
                 const userRef = doc(dbInstance, 'users', user.uid);
                 const userSnap = await getDoc(userRef);
                 
@@ -468,13 +461,12 @@
                     await setDoc(userRef, {
                         email: user.email,
                         displayName: user.displayName || user.email.split('@')[0],
-                        balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
+                        balance: 10000,
                         role: 'user',
                         createdAt: new Date().toISOString()
                     });
                 }
 
-                // Pass user display name to final dashboard transition
                 const targetName = user.displayName || user.email.split('@')[0];
                 executeAuthenticationProcess(targetName);
 
@@ -485,7 +477,7 @@
             }
         }
 
-        // Real email/password sign-in and sign-up handlers [1.1.2]
+        // Real email/password sign-in and strict sign-up with Verification
         emailLoginForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const emailValue = document.getElementById('email-field').value;
@@ -502,12 +494,20 @@
                 overlay.style.display = 'flex';
                 syncText.innerText = "Authorizing identity...";
 
-                // 1. Try to sign in first (Standard Stake flow) [1.1.2]
+                // 1. Try to sign in first
                 try {
                     const userCredential = await signInWithEmailAndPassword(authInstance, emailValue, passwordValue);
                     const user = userCredential.user;
                     
-                    // Double check document has balance
+                    // --- THE FIX: Block login if email is fake/unverified ---
+                    if (!user.emailVerified) {
+                        await signOut(authInstance); // Kick them back out immediately
+                        overlay.style.display = 'none';
+                        alert("Account blocked. You must verify your email address before logging in. Please check your inbox or spam folder for the verification link.");
+                        return;
+                    }
+                    
+                    // Proceed if verified
                     const userRef = doc(dbInstance, 'users', user.uid);
                     const userSnap = await getDoc(userRef);
                     if (!userSnap.exists()) {
@@ -522,24 +522,34 @@
                     
                     executeAuthenticationProcess(user.displayName || emailValue.split('@')[0]);
                 } catch (signInError) {
-                    // 2. If the user doesn't exist, automatically sign them up! [1.1.2]
+                    // 2. If the user doesn't exist, automatically sign them up!
                     if (signInError.code === 'auth/user-not-found' || signInError.code === 'auth/invalid-credential') {
                         syncText.innerText = "Creating secure identity...";
                         
                         const userCredential = await createUserWithEmailAndPassword(authInstance, emailValue, passwordValue);
                         const user = userCredential.user;
 
-                        // Create user document with starting balance to avoid database crash [1.1.2]
+                        // Create their database profile
                         await setDoc(doc(dbInstance, 'users', user.uid), {
                             email: user.email,
                             displayName: emailValue.split('@')[0],
-                            balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
+                            balance: 10000, 
                             role: 'user',
                             createdAt: new Date().toISOString()
                         });
 
-                        const derivedUsername = emailValue.split('@')[0];
-                        executeAuthenticationProcess(derivedUsername);
+                        // --- THE FIX: Send Verification Email and Lock Them Out ---
+                        syncText.innerText = "Dispatching verification email...";
+                        await sendEmailVerification(user);
+                        
+                        // Force sign out immediately so they cannot bypass the verification
+                        await signOut(authInstance);
+
+                        overlay.style.display = 'none';
+                        alert("Success! We have sent a verification link to your email. You MUST click the link to verify your account before you can log in.");
+                        
+                        // Clear the password field for safety
+                        document.getElementById('password-field').value = '';
                     } else {
                         throw signInError;
                     }
@@ -552,7 +562,7 @@
             }
         });
 
-        // Simulated Discord/Telegram Auth popups with Firestore user creation
+        // Simulated Discord/Telegram Auth popups
         async function simulateOAuth(provider) {
             const width = 500, height = 600;
             const left = (screen.width / 2) - (width / 2);
@@ -580,13 +590,12 @@
                 if (event.data === `oauth-success-${provider}`) {
                     window.removeEventListener('message', handleMsg);
                     
-                    // Create user document in Firestore for OAuth providers with balance [1.1.2]
                     if (dbInstance) {
                         const fakeUid = provider.toLowerCase() + '_' + Date.now();
                         await setDoc(doc(dbInstance, 'users', fakeUid), {
                             email: `${provider.toLowerCase()}@${provider.toLowerCase()}.com`,
                             displayName: `${provider}_User`,
-                            balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
+                            balance: 10000, 
                             role: 'user',
                             provider: provider,
                             createdAt: new Date().toISOString()
@@ -602,7 +611,7 @@
         document.getElementById('discord-auth-btn').addEventListener('click', () => simulateOAuth('Discord'));
         document.getElementById('telegram-auth-btn').addEventListener('click', () => simulateOAuth('Telegram'));
 
-        // Simulated Web3 Wallet Signatures with Firestore user creation
+        // Simulated Web3 Wallet Signatures
         async function simulateWalletConnect(walletType) {
             const address = walletType === 'MetaMask' ? '0x71C...392a' : 'HkZ8...7Y2q';
             const signRequest = confirm(
@@ -615,13 +624,12 @@
             );
 
             if (signRequest) {
-                // Create user document in Firestore for wallet providers with balance [1.1.2]
                 if (dbInstance) {
                     const fakeUid = walletType.toLowerCase().replace(' ', '_') + '_' + Date.now();
                     await setDoc(doc(dbInstance, 'users', fakeUid), {
                         email: `${walletType.toLowerCase()}@wallet.com`,
                         displayName: `${walletType}_Holder`,
-                        balance: 10000, // <--- BIND BALANCES TO PREVENT CRASH! [1.1.2]
+                        balance: 10000, 
                         role: 'user',
                         provider: walletType,
                         walletAddress: address,
