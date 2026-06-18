@@ -1,6 +1,7 @@
 // functions/api/wager.js
 export async function onRequestPost(context) {
   try {
+    // 1. Extract payload
     const request = await context.request.json();
     const { idToken, uid, gameType, betAmount, gameParams = {} } = request;
     const projectId = context.env.projectId;
@@ -10,20 +11,25 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Missing parameters" }), { status: 400 });
     }
 
-    // 1. Secure Identity Verification
+    // 2. Secure Identity Verification via Firebase REST API
     const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}?key=${apiKey}`;
     const getRes = await fetch(firestoreUrl, { headers: { "Authorization": `Bearer ${idToken}` } });
 
-    if (!getRes.ok) return new Response(JSON.stringify({ error: "Identity verification failed" }), { status: 401 });
+    if (!getRes.ok) {
+      return new Response(JSON.stringify({ error: "Identity verification failed" }), { status: 401 });
+    }
 
     const userData = await getRes.json();
     const currentBalance = parseInt(userData.fields.balance.integerValue);
 
-    if (currentBalance < betAmount) {
+    // CRITICAL FIX: Only check for sufficient balance if initiating a NEW bet. 
+    // If it's a cashout, the bet was already deducted, so balance might legitimately be 0 if they went all-in!
+    const isCashout = gameType === 'mines_cashout' || gameType === 'crash_cashout';
+    if (!isCashout && currentBalance < betAmount) {
       return new Response(JSON.stringify({ error: "Insufficient balance" }), { status: 400 });
     }
 
-    // Initialize state
+    // 3. Initialize State Variables
     let newBalance = currentBalance;
     let multiplier = 0;
     let gameDetails = {};
@@ -57,7 +63,7 @@ export async function onRequestPost(context) {
       const targetMultiplier = parseFloat(gameParams.targetMultiplier || 2.0);
       const roll = Math.random();
       
-      const rollResult = parseFloat((0.99 / (1 - roll)).toFixed(2)); // 1% House Edge
+      const rollResult = parseFloat((0.99 / (1 - roll)).toFixed(2)); // 1% House Edge Exponential Curve
       const isWin = rollResult >= targetMultiplier;
       
       multiplier = isWin ? targetMultiplier : 0;
@@ -81,6 +87,7 @@ export async function onRequestPost(context) {
 
       const table = plinkoTables[rows] ? plinkoTables[rows][risk] : plinkoTables[12]['medium'];
       
+      // Simulate physics path on the backend to prevent path spoofing
       let path = [];
       let index = rows / 2; // Center drop
       for (let i = 0; i < rows; i++) {
@@ -90,20 +97,36 @@ export async function onRequestPost(context) {
       }
       
       let bucket = Math.round(index);
+      if (bucket < 0) bucket = 0;
+      if (bucket > rows) bucket = rows;
+
       multiplier = table[bucket];
       newBalance = currentBalance - betAmount + Math.floor(betAmount * multiplier);
       gameDetails = { bucket, path };
     }
 
     // ==========================================
-    // 💣 MINES & CRASH (STATELESS PATCHES)
+    // 💣 MINES ENGINE (2-Part Stateless Flow)
     // ==========================================
+    else if (gameType === 'mines') {
+      const minesCount = parseInt(gameParams.minesCount || 3);
+      const TOTAL_TILES = 25;
+      
+      const minePositions = [];
+      while (minePositions.length < minesCount) {
+        const rand = Math.floor(Math.random() * TOTAL_TILES);
+        if (!minePositions.includes(rand)) minePositions.push(rand);
+      }
+      
+      newBalance = currentBalance - betAmount; // Deduct bet instantly
+      gameDetails = { minePositions, minesCount };
+    } 
+    
     else if (gameType === 'mines_cashout') {
-      // SECURE MINES MATH: Re-calculate the multiplier on the server based on revealed tiles
-      // This prevents the user from sending { winnings: 9999999 }
       const revealedTiles = parseInt(gameParams.revealedTiles || 0);
       const minesCount = parseInt(gameParams.minesCount || 3);
       
+      // Re-calculate the multiplier on the server based on revealed tiles
       let prob = 1.0;
       for (let i = 0; i < revealedTiles; i++) {
           prob *= (25 - minesCount - i) / (25 - i);
@@ -111,16 +134,30 @@ export async function onRequestPost(context) {
       const actualMultiplier = (1 - 0.01) / prob; // 1% House Edge
       
       multiplier = actualMultiplier;
+      // Because we already deducted the bet on start, we just add the winnings
       newBalance = currentBalance + Math.floor(betAmount * multiplier);
       gameDetails = { revealedTiles, multiplier };
+    }
 
-    } else if (gameType === 'mines' || gameType === 'crash') {
-      // Basic state initiation (Balance deduction only)
-      newBalance = currentBalance - betAmount;
+    // ==========================================
+    // 🚀 CRASH ENGINE (2-Part Stateless Flow)
+    // ==========================================
+    else if (gameType === 'crash') {
+      newBalance = currentBalance - betAmount; // Deduct bet instantly
       gameDetails = { status: "game_started" };
     }
 
-    // 4. Execute Secure Balance Update
+    else if (gameType === 'crash_cashout') {
+      const cashoutMultiplier = parseFloat(gameParams.cashoutMultiplier || 1.0);
+      multiplier = cashoutMultiplier;
+      // Add winnings to balance
+      newBalance = currentBalance + Math.floor(betAmount * multiplier);
+      gameDetails = { status: "cashed_out", multiplier };
+    }
+
+    // ==========================================
+    // 💾 SECURE DATABASE EXECUTION
+    // ==========================================
     const patchBody = {
       fields: {
         balance: { integerValue: newBalance.toString() },
@@ -131,18 +168,25 @@ export async function onRequestPost(context) {
 
     const patchRes = await fetch(firestoreUrl + "&updateMask.fieldPaths=balance", {
       method: "PATCH",
-      headers: { "Authorization": `Bearer ${idToken}`, "Content-Type": "application/json" },
+      headers: {
+        "Authorization": `Bearer ${idToken}`,
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(patchBody)
     });
 
-    if (!patchRes.ok) return new Response(JSON.stringify({ error: "Failed to update ledger" }), { status: 500 });
+    if (!patchRes.ok) {
+      return new Response(JSON.stringify({ error: "Failed to update balance ledger" }), { status: 500 });
+    }
 
     return new Response(JSON.stringify({
       success: true,
       newBalance,
       multiplier,
       gameDetails
-    }), { headers: { "Content-Type": "application/json" } });
+    }), {
+      headers: { "Content-Type": "application/json" }
+    });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
