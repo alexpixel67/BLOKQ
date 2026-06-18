@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOKQ | Secure Wallet</title>
+    <style>
+        /* CSS RESET & VARIABLES */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-hover: #334155;
+            --accent-green: #00e701;
+            --accent-cyan: #0ea5e9;
+            --text-main: #94a3b8;
+            --text-bright: #ffffff;
+            --border-color: #334155;
+            --border-radius: 12px;
+            --error-red: #ef4444;
+        }
+
+        body { background-color: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* SIDEBAR */
+        aside { width: 260px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; }
+        .logo { font-size: 26px; font-weight: 900; color: var(--text-bright); letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; margin-bottom: 30px; cursor: pointer; }
+        .logo span { color: var(--accent-green); }
+        
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; list-style: none; }
+        .nav-menu li { padding: 12px 15px; background: transparent; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .nav-menu li:hover { background: var(--bg-hover); color: var(--text-bright); }
+        .nav-menu li.active { border-left: 4px solid var(--accent-green); border-radius: 4px 8px 8px 4px; color: var(--text-bright); background: rgba(0, 231, 1, 0.05); }
+
+        /* MAIN CONTENT */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background: radial-gradient(circle at top center, #1e293b 0%, #0f172a 100%); }
+        
+        /* HEADER */
+        header { display: flex; justify-content: flex-end; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); }
+        .user-info { display: flex; align-items: center; gap: 20px; }
+        .balance { background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; font-weight: bold; display: flex; gap: 8px; align-items: center; color: white; }
+        .balance span { color: var(--accent-green); }
+        .profile-pic { width: 42px; height: 42px; background: var(--accent-cyan); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--bg-dark); background-size: cover; background-position: center; border: 2px solid var(--bg-panel); }
+
+        /* WALLET UI */
+        .content { padding: 40px; max-width: 900px; margin: 0 auto; width: 100%; }
+        
+        .wallet-header { margin-bottom: 30px; }
+        .wallet-title { font-size: 32px; font-weight: 900; color: white; margin-bottom: 10px; }
+        .exchange-rate { display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 231, 1, 0.1); border: 1px solid rgba(0, 231, 1, 0.2); color: var(--accent-green); padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+        .wallet-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        
+        .wallet-tabs { display: flex; border-bottom: 1px solid var(--border-color); background: #161f2e; }
+        .tab { flex: 1; padding: 20px; text-align: center; font-weight: bold; cursor: pointer; color: var(--text-main); transition: 0.2s; border-bottom: 3px solid transparent; }
+        .tab:hover { background: rgba(255,255,255,0.02); color: white; }
+        .tab.active { color: var(--accent-green); border-bottom-color: var(--accent-green); background: transparent; }
+
+        .tab-content { padding: 40px; display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* FORM ELEMENTS */
+        .form-group { margin-bottom: 25px; }
+        .form-label { display: block; font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; transition: 0.2s; }
+        .form-input-wrapper:focus-within { border-color: var(--accent-green); }
+        .form-input { flex: 1; background: transparent; border: none; color: white; padding: 15px; outline: none; font-size: 15px; font-weight: bold; width: 100%; }
+        .form-select { background: transparent; border: none; color: white; padding: 15px; outline: none; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; appearance: none; }
+        .currency-icon { display: flex; align-items: center; justify-content: center; padding: 0 15px; font-size: 20px; background: rgba(255,255,255,0.02); border-right: 1px solid var(--border-color); }
+
+        .btn-primary { width: 100%; background: var(--accent-green); color: #000; border: none; padding: 16px; border-radius: 8px; font-weight: 900; font-size: 16px; text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(0, 231, 1, 0.2); }
+        .btn-primary:hover { background: #00c401; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 231, 1, 0.4); }
+        .btn-primary:disabled { background: #334155; color: #64748b; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* DEPOSIT ADDRESS AREA */
+        .deposit-area { display: none; margin-top: 30px; text-align: center; padding-top: 30px; border-top: 1px dashed var(--border-color); }
+        .qr-placeholder { width: 180px; height: 180px; background: #fff; margin: 0 auto 20px auto; border-radius: 12px; display: flex; justify-content: center; align-items: center; padding: 10px; }
+        .qr-placeholder img { width: 100%; height: 100%; }
+        .address-box { background: var(--bg-dark); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; font-family: monospace; font-size: 14px; color: white; word-break: break-all; margin-bottom: 15px; user-select: all; }
+        .warning-text { font-size: 12px; color: var(--error-red); background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        /* WITHDRAW AREA */
+        .conversion-preview { text-align: center; margin: 20px 0; font-size: 18px; color: white; font-weight: bold; }
+        .conversion-preview span { color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo" onclick="window.location.href='index.html'">🟩 BLOK<span>Q</span></div>
+        <ul class="nav-menu">
+            <li onclick="window.location.href='index.html'">🎮 Casino Lobby</li>
+            <li>🔥 Originals</li>
+            <li>🏆 Global Rankings</li>
+            <li class="active">💰 My Wallet</li>
+        </ul>
+    </aside>
+
+    <main>
+        <header>
+            <div class="user-info">
+                <div class="balance">
+                    <span id="bq-balance">...</span> BQ
+                </div>
+                <div class="profile-pic" id="user-profile-pic">?</div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="wallet-header">
+                <h1 class="wallet-title">Vault & Cashier</h1>
+                <div class="exchange-rate">💱 Exchange Rate: 100 BQ = $1.00 USD</div>
+            </div>
+
+            <div class="wallet-card">
+                <!-- TABS -->
+                <div class="wallet-tabs">
+                    <div class="tab active" onclick="switchTab('deposit', this)">⬇️ Deposit Crypto</div>
+                    <div class="tab" onclick="switchTab('withdraw', this)">⬆️ Withdraw BQ</div>
+                </div>
+
+                <!-- DEPOSIT SECTION -->
+                <div id="tab-deposit" class="tab-content active">
+                    <div class="form-group">
+                        <label class="form-label">Select Cryptocurrency</label>
+                        <div class="form-input-wrapper">
+                            <div class="currency-icon" id="dep-icon">🟣</div>
+                            <select class="form-select" id="deposit-currency" onchange="updateDepositIcon()">
+                                <option value="SOL">Solana (SOL)</option>
+                                <option value="ETH">Ethereum (ETH)</option>
+                                <option value="BTC">Bitcoin (BTC)</option>
+                                <option value="USDT">Tether (USDT - ERC20)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="btn-generate" onclick="generateAddress()">Generate Deposit Address</button>
+
+                    <!-- Hidden until generated -->
+                    <div class="deposit-area" id="deposit-area">
+                        <div class="form-label" style="text-align: center;">Send <span id="dep-coin-name">SOL</span> to this address:</div>
+                        
+                        <!-- Mock QR Code for visual -->
+                        <div class="qr-placeholder">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=blockchain_address_here" id="qr-code">
+                        </div>
+
+                        <div class="address-box" id="crypto-address">
+                            Generating secure address...
+                        </div>
+                        
+                        <div class="warning-text">
+                            ⚠️ Send ONLY <strong id="dep-coin-warn">SOL</strong> to this address. Sending any other coin will result in permanent loss. BQ tokens will be credited automatically after 1 network confirmation.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WITHDRAW SECTION -->
+                <div id="tab-withdraw" class="tab-content">
+                    <div class="form-group">
+                        <label class="form-label">Withdrawal Amount (BQ)</label>
+                        <div class="form-input-wrapper">
+                            <div class="currency-icon">🟩</div>
+                            <input type="number" id="withdraw-amount" class="form-input" placeholder="0" min="1000" oninput="calculateWithdrawal()">
+                        </div>
+                        <div style="font-size: 11px; color: #888; margin-top: 8px;">Minimum withdrawal: 1,000 BQ ($10.00)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payout Cryptocurrency</label>
+                        <div class="form-input-wrapper">
+                            <div class="currency-icon" id="wit-icon">🟣</div>
+                            <select class="form-select" id="withdraw-currency" onchange="updateWithdrawIcon()">
+                                <option value="SOL">Solana (SOL)</option>
+                                <option value="ETH">Ethereum (ETH)</option>
+                                <option value="BTC">Bitcoin (BTC)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="conversion-preview">
+                        You will receive: <span id="receive-amount">$0.00 USD</span> <span style="font-size:12px; color:#888;">(in Crypto equivalent)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Your Destination Address</label>
+                        <div class="form-input-wrapper">
+                            <div class="currency-icon">📍</div>
+                            <input type="text" id="withdraw-address" class="form-input" placeholder="Paste your wallet address here...">
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" id="btn-withdraw" onclick="submitWithdrawal()">Request Withdrawal</button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        let auth = null, db = null, activeUser = null;
+        let userBalance = 0;
+
+        const bqBalanceDisplay = document.getElementById('bq-balance');
+        const userProfilePic = document.getElementById('user-profile-pic');
+
+        // Init Firebase
+        async function initPlatform() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, user => {
+                    if (!user) {
+                        window.location.href = "login.html";
+                    } else {
+                        activeUser = user;
+                        if (user.photoURL) {
+                            userProfilePic.style.backgroundImage = `url('${user.photoURL}')`;
+                            userProfilePic.innerText = "";
+                        } else {
+                            userProfilePic.innerText = (user.displayName || user.email || "?").charAt(0).toUpperCase();
+                        }
+
+                        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+                            if (docSnap.exists()) {
+                                userBalance = docSnap.data().balance || 0;
+                                bqBalanceDisplay.innerText = userBalance.toLocaleString();
+                            }
+                        });
+                    }
+                });
+            } catch (err) { console.error("Firebase init failed."); }
+        }
+
+        // Tab Switcher
+        window.switchTab = function(tabName, element) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            element.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // Icon Updaters
+        const icons = { "SOL": "🟣", "ETH": "🔷", "BTC": "₿", "USDT": "💵" };
+        window.updateDepositIcon = function() {
+            const coin = document.getElementById('deposit-currency').value;
+            document.getElementById('dep-icon').innerText = icons[coin];
+        }
+        window.updateWithdrawIcon = function() {
+            const coin = document.getElementById('withdraw-currency').value;
+            document.getElementById('wit-icon').innerText = icons[coin];
+        }
+
+        // ==========================================
+        // DEPOSIT SIMULATION (Requires Backend Integration)
+        // ==========================================
+        window.generateAddress = async function() {
+            const coin = document.getElementById('deposit-currency').value;
+            const btn = document.getElementById('btn-generate');
+            const depArea = document.getElementById('deposit-area');
+            const addrBox = document.getElementById('crypto-address');
+
+            btn.disabled = true;
+            btn.innerText = "Generating secure node...";
+
+            // In production, this fetch calls YOUR API, which calls NOWPayments/Coinbase
+            // e.g., const res = await fetch('/api/wallet/deposit', { method: 'POST', ... })
+
+            setTimeout(() => {
+                document.getElementById('dep-coin-name').innerText = coin;
+                document.getElementById('dep-coin-warn').innerText = coin;
+                
+                // MOCK ADDRESSES
+                let mockAddress = "";
+                if (coin === "SOL") mockAddress = "EKpQGSJtjMFqKZ9KQanUKXFm7yJbEwYk12jHQFwK3C7T";
+                if (coin === "ETH" || coin === "USDT") mockAddress = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F";
+                if (coin === "BTC") mockAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+
+                addrBox.innerText = mockAddress;
+                document.getElementById('qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${mockAddress}`;
+
+                btn.style.display = "none";
+                depArea.style.display = "block";
+            }, 1000);
+        }
+
+        // ==========================================
+        // WITHDRAW SIMULATION (Requires Backend Integration)
+        // ==========================================
+        window.calculateWithdrawal = function() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value) || 0;
+            const usdValue = amount / 100;
+            document.getElementById('receive-amount').innerText = `$${usdValue.toFixed(2)} USD`;
+        }
+
+        window.submitWithdrawal = async function() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            const address = document.getElementById('withdraw-address').value;
+            const btn = document.getElementById('btn-withdraw');
+
+            if (!amount || amount < 1000) return alert("Minimum withdrawal is 1,000 BQ ($10.00).");
+            if (amount > userBalance) return alert("Insufficient BQ Balance.");
+            if (!address || address.length < 10) return alert("Please enter a valid destination address.");
+
+            btn.disabled = true;
+            btn.innerText = "Processing Request...";
+
+            // In production, this fetch calls YOUR API to deduct balance and queue the payout
+            // e.g., const res = await fetch('/api/wallet/withdraw', { method: 'POST', ... })
+
+            setTimeout(() => {
+                alert(`Success! Withdrawal request for ${amount} BQ ($${(amount/100).toFixed(2)}) has been queued for security review. Funds will be sent to ${address} shortly.`);
+                btn.innerText = "Request Submitted";
+            }, 1500);
+        }
+
+        window.addEventListener('DOMContentLoaded', initPlatform);
+    </script>
+</body>
+</html>
