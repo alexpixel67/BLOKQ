@@ -30,7 +30,7 @@
         .control-label { font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; color: var(--text-main); display: flex; justify-content: space-between; }
         
         .input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; align-items: center; }
-        .input-wrapper input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; }
+        .input-wrapper input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; width: 100%; }
         .input-suffix { padding-right: 15px; font-weight: bold; color: #64748b; }
         .btn-mod { background: var(--bg-hover); border: none; color: white; width: 45px; height: 100%; font-weight: bold; cursor: pointer; border-left: 1px solid var(--border-color); transition: 0.2s; }
         .btn-mod:hover { background: #475569; }
@@ -48,7 +48,7 @@
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0f172a; position: relative; }
         
         /* HEADER */
-        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; z-index: 10; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; z-index: 10; border-bottom: 1px solid var(--border-color); }
         .header-title { font-size: 20px; font-weight: bold; color: white; }
         .balance-box { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: bold; display: flex; gap: 8px; align-items: center; }
         .balance-box span { color: var(--accent-green); }
@@ -126,12 +126,13 @@
     <!-- FIREBASE AND CRASH ENGINE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, getIdToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // State variables
         let auth = null, db = null, activeUser = null, activeUserRef = null;
         let userBalance = 0;
+        let userIdToken = null;
         
         // Game State Engine: 'idle' | 'starting' | 'running' | 'cashed_out' | 'crashed'
         let gameState = 'idle';
@@ -173,11 +174,14 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                onAuthStateChanged(auth, user => {
-                    if (!user) window.location.href = "login.html";
-                    else {
+                onAuthStateChanged(auth, async user => {
+                    if (!user) {
+                        window.location.href = "login.html";
+                    } else {
                         activeUser = user;
                         activeUserRef = doc(db, "users", user.uid);
+                        userIdToken = await getIdToken(user);
+                        
                         onSnapshot(activeUserRef, (docSnap) => {
                             if (docSnap.exists()) {
                                 userBalance = docSnap.data().balance;
@@ -196,6 +200,7 @@
         document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
 
         // Mathematical Crash Point Generation (House Edge: ~3%)
+        // Generated locally for visual sync in stateless version
         function generateCrashPoint() {
             const roll = Math.random();
             if (roll < 0.03) return 1.00; // 3% instant crash
@@ -220,13 +225,39 @@
             if (isNaN(currentBet) || currentBet <= 0) return alert("Invalid Bet");
             if (currentBet > userBalance) return alert("Insufficient BQ Balance");
             
-            // Lock UI & Deduct Balance
+            // Lock UI
             betInput.disabled = true;
             autoCashoutInput.disabled = true;
             gameState = 'starting';
             actionBtn.className = "btn-action disabled";
             
-            await updateDoc(activeUserRef, { balance: userBalance - currentBet });
+            try {
+                // Call secure wager API to deduct balance at start
+                const response = await fetch('/api/wager', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken: userIdToken,
+                        uid: activeUser.uid,
+                        gameType: 'crash',
+                        betAmount: currentBet
+                    })
+                });
+
+                const result = await response.json();
+                if (!result.success) throw new Error(result.error);
+                
+                // Update local balance
+                userBalance = result.newBalance;
+
+            } catch (err) {
+                alert('Game failed to start: ' + err.message);
+                gameState = 'idle';
+                actionBtn.className = "btn-action";
+                betInput.disabled = false;
+                autoCashoutInput.disabled = false;
+                return;
+            }
 
             crashPoint = generateCrashPoint();
             currentMulti = 1.00;
@@ -262,16 +293,34 @@
             
             gameState = 'cashed_out';
             actionBtn.className = "btn-action disabled";
+            actionBtn.innerText = "Cashing Out...";
+            statusDisplay.innerText = "Securing Winnings...";
+            
+            try {
+                // Call secure wager API to process cashout
+                const response = await fetch('/api/wager', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken: userIdToken,
+                        uid: activeUser.uid,
+                        gameType: 'crash_cashout',
+                        betAmount: currentBet,
+                        gameParams: { cashoutMultiplier: parseFloat(currentMulti.toFixed(2)) }
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    userBalance = result.newBalance;
+                }
+            } catch (err) {
+                console.error("Cashout API Error:", err);
+            }
+
             actionBtn.innerText = "Cashed Out";
             statusDisplay.innerText = "Success! Waiting for crash...";
-            
-            const winnings = Math.floor(currentBet * currentMulti);
-            
-            // Update UI
             multiDisplay.style.color = "var(--accent-green)";
-            
-            // Credit Balance
-            await updateDoc(activeUserRef, { balance: userBalance + winnings });
         }
 
         function triggerCrash() {
@@ -337,7 +386,7 @@
             const totalY = canvas.height - padding * 2;
             
             // Growth curves
-            const progressX = Math.min(1, elapsed / 10000); // Scales x axis up to 10 seconds, then pushes out
+            const progressX = Math.min(1, elapsed / 10000); 
             const currentX = startX + (totalX * progressX);
             
             const curveIntensity = Math.pow(progressX, 2);
@@ -385,7 +434,6 @@
         }
 
         function drawGraphCrashed() {
-            // Keep the final curve but turn it red
             ctx.strokeStyle = "var(--error-red)";
             ctx.stroke();
         }
