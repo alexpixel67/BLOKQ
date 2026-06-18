@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Users collection - users can read their own data, admins can read/write all
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Only admins can update role or balance directly
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+    
+    // Games collection - anyone can read, only admins can write
+    match /games/{gameId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Bets collection - users can create their own bets, admins can read all
+    match /bets/{betId} {
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if false; // Bets should be immutable after creation
+      allow delete: if false;
+    }
+    
+    // Settings/Admin collection - only admins can access
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

@@ -127,7 +127,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // State variables
         let auth = null, db = null, activeUser = null, activeUserRef = null;
@@ -196,22 +196,8 @@
         document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
 
         // Mathematical Crash Point Generation (House Edge: ~3%)
-        function generateCrashPoint() {
-            const roll = Math.random();
-            if (roll < 0.03) return 1.00; // 3% instant crash
-            return Math.max(1.00, parseFloat((0.99 / (1 - roll)).toFixed(2)));
-        }
-
-        // ==========================================
-        // GAME LOOP CONTROLLER
-        // ==========================================
-        actionBtn.addEventListener('click', async () => {
-            if (gameState === 'idle' || gameState === 'crashed') {
-                startGame();
-            } else if (gameState === 'running') {
-                cashOut();
-            }
-        });
+        // Note: Actual crash point is now generated server-side for security
+        let serverCrashPoint = null;
 
         async function startGame() {
             currentBet = parseInt(betInput.value);
@@ -220,21 +206,47 @@
             if (isNaN(currentBet) || currentBet <= 0) return alert("Invalid Bet");
             if (currentBet > userBalance) return alert("Insufficient BQ Balance");
             
-            // Lock UI & Deduct Balance
+            // Lock UI & Call server to place bet
             betInput.disabled = true;
             autoCashoutInput.disabled = true;
-            gameState = 'starting';
-            actionBtn.className = "btn-action disabled";
+        gameState = 'starting';
+        actionBtn.className = "btn-action disabled";
             
-            await updateDoc(activeUserRef, { balance: userBalance - currentBet });
+            try {
+                // Call server-side wager API to start game and get crash point
+                const response = await fetch('/api/wager', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken: userIdToken,
+                        uid: activeUser.uid,
+                        gameType: 'crash',
+                        betAmount: currentBet,
+                        gameParams: {}
+                    })
+                });
 
-            crashPoint = generateCrashPoint();
-            currentMulti = 1.00;
+                const result = await response.json();
+                
+                if (!result.success) {
+                    alert(result.error || 'Game failed');
+                    gameState = 'idle';
+                    betInput.disabled = false;
+                    autoCashoutInput.disabled = false;
+                    actionBtn.className = "btn-action";
+                    return;
+                }
+
+                // Update local balance from server response
+                userBalance = result.newBalance;
+                serverCrashPoint = result.gameDetails.crashPoint;
+                crashPoint = serverCrashPoint;
+                currentMulti = 1.00;
             
             // 3 Second Countdown
             let countdown = 3;
-            multiDisplay.style.color = "white";
-            statusDisplay.innerText = "Launching in...";
+        multiDisplay.style.color = "white";
+        statusDisplay.innerText = "Launching in...";
             
             let tick = setInterval(() => {
                 multiDisplay.innerText = `${countdown.toFixed(1)}s`;
@@ -245,45 +257,53 @@
                     launchRocket();
                 }
             }, 100);
+        } catch (err) {
+            console.error('Crash game error:', err);
+            alert('Game error: ' + err.message);
+        gameState = 'idle';
+            betInput.disabled = false;
+            autoCashoutInput.disabled = false;
+        actionBtn.className = "btn-action";
+        }
+    }
+
+    function launchRocket() {
+        gameState = 'running';
+        actionBtn.className = "btn-action cashout";
+        actionBtn.innerText = "Cash Out";
+        statusDisplay.innerText = "Rocket in Flight";
+            
+        startTime = Date.now();
+        animationFrame = requestAnimationFrame(updateGraph);
         }
 
-        function launchRocket() {
-            gameState = 'running';
-            actionBtn.className = "btn-action cashout";
-            actionBtn.innerText = "Cash Out";
-            statusDisplay.innerText = "Rocket in Flight";
+    async function cashOut() {
+        if (gameState !== 'running') return;
             
-            startTime = Date.now();
-            animationFrame = requestAnimationFrame(updateGraph);
-        }
-
-        async function cashOut() {
-            if (gameState !== 'running') return;
+        gameState = 'cashed_out';
+        actionBtn.className = "btn-action disabled";
+        actionBtn.innerText = "Cashed Out";
+        statusDisplay.innerText = "Success! Waiting for crash...";
             
-            gameState = 'cashed_out';
-            actionBtn.className = "btn-action disabled";
-            actionBtn.innerText = "Cashed Out";
-            statusDisplay.innerText = "Success! Waiting for crash...";
+        const winnings = Math.floor(currentBet * currentMulti);
             
-            const winnings = Math.floor(currentBet * currentMulti);
+        // Update UI
+        multiDisplay.style.color = "var(--accent-green)";
             
-            // Update UI
-            multiDisplay.style.color = "var(--accent-green)";
-            
-            // Credit Balance
-            await updateDoc(activeUserRef, { balance: userBalance + winnings });
+        // Credit Balance - update local balance from server
+        userBalance += winnings;
         }
 
         function triggerCrash() {
-            gameState = 'crashed';
+        gameState = 'crashed';
             cancelAnimationFrame(animationFrame);
             
-            multiDisplay.innerText = `${crashPoint.toFixed(2)}x`;
-            multiDisplay.style.color = "var(--error-red)";
-            statusDisplay.innerText = "CRASHED";
+        multiDisplay.innerText = `${crashPoint.toFixed(2)}x`;
+        multiDisplay.style.color = "var(--error-red)";
+        statusDisplay.innerText = "CRASHED";
             
-            actionBtn.className = "btn-action";
-            actionBtn.innerText = "Play Again";
+        actionBtn.className = "btn-action";
+        actionBtn.innerText = "Play Again";
             
             betInput.disabled = false;
             autoCashoutInput.disabled = false;
@@ -296,7 +316,7 @@
         // CANVAS GRAPHICS
         // ==========================================
         function updateGraph() {
-            if (gameState !== 'running' && gameState !== 'cashed_out') return;
+        if (gameState !== 'running' && gameState !== 'cashed_out') return;
 
             // Exponential growth formula over time
             const elapsedMs = Date.now() - startTime;
@@ -310,19 +330,19 @@
             }
 
             // Auto Cashout trigger
-            if (gameState === 'running' && targetAutoCashout && currentMulti >= targetAutoCashout) {
+        if (gameState === 'running' && targetAutoCashout && currentMulti >= targetAutoCashout) {
                 cashOut();
             }
 
             // Render Text
-            if (gameState === 'running') {
+        if (gameState === 'running') {
                 multiDisplay.innerText = `${currentMulti.toFixed(2)}x`;
             }
 
             // Render Line Graphic
             drawActiveGraph(elapsedMs);
 
-            animationFrame = requestAnimationFrame(updateGraph);
+        animationFrame = requestAnimationFrame(updateGraph);
         }
 
         function drawActiveGraph(elapsed) {

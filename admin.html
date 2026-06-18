@@ -246,8 +246,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, collection, addDoc, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, getIdToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         let auth = null;
         let db = null;
@@ -457,6 +457,36 @@
         });
 
         // ==========================================
+        // SECURE ADMIN API CALLS VIA CLOUDFLARE WORKER
+        // ==========================================
+        
+        async function callAdminApi(action, data = {}) {
+            if (!currentUser) {
+                throw new Error("User not authenticated");
+            }
+            
+            const idToken = await getIdToken(currentUser);
+            
+            const response = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idToken,
+                    action,
+                    ...data
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || "API request failed");
+            }
+            
+            return result;
+        }
+
+        // ==========================================
         // GAME METADATA FORM SUBMISSION
         // ==========================================
         const gameForm = document.getElementById('game-form');
@@ -468,22 +498,21 @@
                 page: document.getElementById('game-page').value,
                 emoji: document.getElementById('game-emoji').value || '🎮',
                 category: document.getElementById('game-category').value,
-                image: uploadedImageUrl, // Save CDN URL to database [1, 2]
-                updatedAt: new Date()
+                image: uploadedImageUrl // Save CDN URL to database [1, 2]
             };
 
             try {
                 const editId = gameForm.dataset.editId;
                 
                 if (editId) {
-                    // Update document
-                    await updateDoc(doc(db, "games", editId), gameData);
+                    // Update existing game via secure API
+                    gameData.id = editId;
+                    await callAdminApi('updateGame', { gameData });
                     showNotification('Game metadata updated!', 'success');
                     delete gameForm.dataset.editId;
                 } else {
-                    // Add document
-                    gameData.createdAt = new Date();
-                    await addDoc(collection(db, "games"), gameData);
+                    // Add new game via secure API
+                    await callAdminApi('addGame', { gameData });
                     showNotification('Game successfully listed!', 'success');
                 }
                 
@@ -495,27 +524,26 @@
                 loadGames();
             } catch (error) {
                 console.error('Error saving game:', error);
-                showNotification('Failed to execute database write.', 'error');
+                showNotification(error.message || 'Failed to execute database write.', 'error');
             }
         });
 
-        // Load active listings
+        // Load active listings via secure API
         async function loadGames() {
             try {
                 const gamesList = document.getElementById('games-list');
                 gamesList.innerHTML = '<p style="color: var(--text-main);">Loading active games list...</p>';
 
-                const gamesQuery = query(collection(db, "games"));
-                const querySnapshot = await getDocs(gamesQuery);
+                const result = await callAdminApi('getGames');
+                const games = result.games || [];
 
-                if (querySnapshot.empty) {
+                if (games.length === 0) {
                     gamesList.innerHTML = '<p style="color: var(--text-main);">No listed games found.</p>';
                     return;
                 }
 
                 gamesList.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const game = doc.data();
+                games.forEach((game) => {
                     const gameItem = document.createElement('div');
                     gameItem.className = 'game-item';
                     gameItem.innerHTML = `
@@ -526,8 +554,8 @@
                             <div class="game-item-title">${game.title}</div>
                             <div class="game-item-creator">${game.page} • ${game.category}</div>
                             <div class="game-item-actions">
-                                <button class="btn-edit" onclick="editGame('${doc.id}')">Edit</button>
-                                <button class="btn-delete" onclick="deleteGame('${doc.id}')">Delete</button>
+                                <button class="btn-edit" onclick="editGame('${game.id}')">Edit</button>
+                                <button class="btn-delete" onclick="deleteGame('${game.id}')">Delete</button>
                             </div>
                         </div>
                     `;
@@ -541,20 +569,23 @@
         window.deleteGame = async (gameId) => {
             if (!confirm('Are you sure you want to delete this game?')) return;
             try {
-                await deleteDoc(doc(db, "games", gameId));
+                await callAdminApi('deleteGame', { gameId });
                 showNotification('Listing deleted successfully.', 'success');
                 loadGames();
             } catch (error) {
                 console.error('Error deleting game:', error);
+                showNotification(error.message || 'Failed to delete game', 'error');
             }
         };
 
         window.editGame = async (gameId) => {
             try {
-                const gameDoc = await getDoc(doc(db, "games", gameId));
-                if (!gameDoc.exists()) return;
+                // Fetch game data via secure API
+                const result = await callAdminApi('getGames');
+                const games = result.games || [];
+                const game = games.find(g => g.id === gameId);
                 
-                const game = gameDoc.data();
+                if (!game) return;
                 
                 document.getElementById('game-title-input').value = game.title;
                 document.getElementById('game-page').value = game.page;

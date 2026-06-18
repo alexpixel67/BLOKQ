@@ -1,0 +1,15 @@
+name = "blokq-casino"
+main = "functions/[[path]].ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Firebase config will be loaded from environment variables
+# Set these in Cloudflare Dashboard or via wrangler secret commands:
+# wrangler secret put apiKey
+# wrangler secret put authDomain
+# wrangler secret put projectId
+# etc.
+
+# Cloudinary config
+# wrangler secret put CLOUDINARY_CLOUD_NAME
+# wrangler secret put CLOUDINARY_UPLOAD_PRESET
