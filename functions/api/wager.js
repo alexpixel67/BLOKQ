@@ -1,7 +1,12 @@
 // functions/api/wager.js
 export async function onRequestPost(context) {
   try {
-    const { idToken, uid, gameType, betAmount } = await context.request.json();
+    const request = await context.request.json();
+    const idToken = request.idToken;
+    const uid = request.uid;
+    const gameType = request.gameType;
+    const betAmount = request.betAmount;
+    const gameParams = request.gameParams || {};
     const projectId = context.env.projectId;
     const apiKey = context.env.apiKey;
 
@@ -83,12 +88,70 @@ export async function onRequestPost(context) {
       const crashPoint = roll < 0.03 ? 1.00 : parseFloat((0.99 / (1 - roll)).toFixed(2));
       
       gameDetails = { crashPoint: Math.min(crashPoint, 15.00) };
+
+    } else if (gameType === 'dice') {
+      // Secure dice roll calculation
+      const rollResult = parseFloat((Math.random() * 100).toFixed(2));
+      const targetNumber = gameParams.targetNumber || 50.5;
+      const isRollOver = gameParams.isRollOver !== false;
+      
+      let isWin;
+      if (isRollOver) {
+        isWin = rollResult > targetNumber;
+      } else {
+        isWin = rollResult < targetNumber;
+      }
+      
+      const payout = gameParams.payout || 2.0;
+      multiplier = isWin ? payout : 0;
+      gameDetails = { rollResult, isWin, targetNumber, isRollOver };
+
+    } else if (gameType === 'limbo') {
+      // Secure limbo roll calculation
+      const targetMultiplier = gameParams.targetMultiplier || 2.0;
+      const roll = Math.random();
+      // Inverse distribution for limbo: higher targets are harder to hit
+      const rollResult = parseFloat((0.99 / (1 - roll)).toFixed(2));
+      const isWin = rollResult >= targetMultiplier;
+      
+      multiplier = isWin ? targetMultiplier : 0;
+      gameDetails = { rollResult, isWin, targetMultiplier };
+
+    } else if (gameType === 'mines_cashout') {
+      // Handle mines cashout - credit winnings based on revealed tiles
+      const winnings = gameParams.winnings || 0;
+      newBalance = currentBalance + winnings;
+      multiplier = winnings / betAmount;
+      gameDetails = { winnings, revealedTiles: gameParams.revealedTiles || 0 };
+
+    } else if (gameType === 'mines') {
+      // Secure mines game - generate mine positions server-side
+      const minesCount = gameParams.minesCount || 3;
+      const TOTAL_TILES = 25;
+      
+      // Generate random mine positions
+      const minePositions = [];
+      while (minePositions.length < minesCount) {
+        const rand = Math.floor(Math.random() * TOTAL_TILES);
+        if (!minePositions.includes(rand)) {
+          minePositions.push(rand);
+        }
+      }
+      
+      // For mines, we don't calculate final multiplier here
+      // The client will send cashout requests as tiles are revealed
+      // We just store the mine positions and initial state
+      gameDetails = { minePositions, minesCount, revealedTiles: [] };
+      // No immediate balance change for mines - handled via cashout
+      newBalance = currentBalance - betAmount;
     }
 
     // 3. Compute new balance
-    // For Crash, calculation is handled after client session finishes, but Plinko/RNG resolve immediately.
-    let newBalance = currentBalance - betAmount;
-    if (gameType !== 'crash') {
+    // For Crash - calculation is handled after client session finishes
+    // Plinko/RNG/Dice/Limbo resolve immediately.
+    // Mines has special handling via mines_cashout
+    if (gameType !== 'crash' && gameType !== 'mines' && gameType !== 'mines_cashout') {
+      newBalance = currentBalance - betAmount;
       newBalance += Math.floor(betAmount * multiplier);
     }
 
