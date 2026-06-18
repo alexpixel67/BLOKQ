@@ -224,11 +224,11 @@
             
             const startY = 50;
             const spacingY = (canvasHeight - 110) / rows;
-            const spacingX = spacingY; // Make them equal grid spacing
+            const spacingX = spacingY; 
             
             // Build Peg Matrix
             for (let r = 0; r < rows; r++) {
-                const rowPins = r + 3; // Starts with 3 pins at row 0
+                const rowPins = r + 3; 
                 const rowWidth = (rowPins - 1) * spacingX;
                 const xOffset = (canvasWidth - rowWidth) / 2;
                 
@@ -256,12 +256,11 @@
                     w: spacingBucket - 4,
                     h: 22,
                     mult: multis[i],
-                    flashTimer: 0 // Used for successful land visual impact
+                    flashTimer: 0
                 });
             }
         }
 
-        // Handle Row & Risk Switches
         rowsSelect.addEventListener('change', (e) => {
             rows = parseInt(e.target.value);
             buildBoard();
@@ -271,7 +270,6 @@
             buildBoard();
         });
 
-        // Bet modifiers
         document.getElementById('bet-half-btn').onclick = () => {
             betInput.value = Math.max(1, Math.floor(parseInt(betInput.value) / 2));
         };
@@ -295,8 +293,8 @@
                 return;
             }
 
-            // Call server-side wager API to deduct balance and get result
             try {
+                // Securely call server. It deducts balance, rolls math, and credits payout.
                 const response = await fetch('/api/wager', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -305,10 +303,7 @@
                         uid: activeUser.uid,
                         gameType: 'plinko',
                         betAmount: betAmount,
-                        gameParams: {
-                            rows: rows,
-                            risk: risk
-                        }
+                        gameParams: { rows: rows, risk: risk }
                     })
                 });
 
@@ -319,14 +314,12 @@
                     return;
                 }
 
-                // Update local balance from server response
-                userBalance = result.newBalance;
+                // Wait, visually the money shouldn't jump up instantly, 
+                // but since Firestore updates real-time we'll let the cloud listener handle it.
                 
-                // Use server-calculated bucket result for physics visualization
                 const serverBucket = result.gameDetails.bucket || Math.floor(buckets.length / 2);
-                const serverPath = result.gameDetails.path || [];
                 
-                // Spawn ball at randomized top offset
+                // Spawn ball
                 balls.push({
                     x: canvasWidth / 2 + (Math.random() - 0.5) * 8,
                     y: 15,
@@ -335,7 +328,6 @@
                     bet: betAmount,
                     active: true,
                     serverBucket: serverBucket,
-                    serverPath: serverPath,
                     multiplier: result.multiplier
                 });
             } catch (err) {
@@ -347,11 +339,9 @@
         dropBtn.addEventListener('click', dropBall);
 
         function updatePhysicsLoop() {
-            // Clear background
             ctx.fillStyle = "#1e293b";
             ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-            // Draw Pins
             ctx.fillStyle = "#64748b";
             pins.forEach(pin => {
                 ctx.beginPath();
@@ -359,11 +349,8 @@
                 ctx.fill();
             });
 
-            // Draw Buckets
             buckets.forEach(b => {
                 ctx.save();
-                
-                // Trigger dynamic scale-up and brighter color when a ball hits a bucket
                 if (b.flashTimer > 0) {
                     b.flashTimer -= 0.1;
                     ctx.scale(1.05, 1.05);
@@ -384,20 +371,23 @@
                 ctx.restore();
             });
 
-            // Update & Draw Balls
             balls.forEach((ball, bIndex) => {
                 if (!ball.active) return;
 
-                // Physics movement
                 ball.vy += gravity;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
-                // Wall bounds
+                // Nudge ball towards the server's pre-calculated bucket to ensure physics match the math securely
+                if (ball.serverBucket !== undefined && ball.y > canvasHeight / 3) {
+                    const targetX = buckets[ball.serverBucket].x;
+                    if (ball.x < targetX - 10) ball.vx += 0.04;
+                    if (ball.x > targetX + 10) ball.vx -= 0.04;
+                }
+
                 if (ball.x - ballRadius < 10) { ball.x = 10 + ballRadius; ball.vx *= -bounceDampening; }
                 if (ball.x + ballRadius > canvasWidth - 10) { ball.x = canvasWidth - 10 - ballRadius; ball.vx *= -bounceDampening; }
 
-                // Peg Collisions
                 pins.forEach(pin => {
                     const dx = ball.x - pin.x;
                     const dy = ball.y - pin.y;
@@ -409,53 +399,39 @@
                         ball.x = pin.x + Math.cos(angle) * minDist;
                         ball.y = pin.y + Math.sin(angle) * minDist;
 
-                        // Deflect velocity and apply some chaos to guarantee distribution
                         const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy) * bounceDampening;
                         ball.vx = Math.cos(angle) * speed + (Math.random() - 0.5) * 0.4;
                         ball.vy = Math.sin(angle) * speed;
                     }
                 });
 
-                // Bucket hit resolution
                 const finalY = buckets[0].y;
                 if (ball.y >= finalY) {
                     ball.active = false;
                     
-                    // Determine bucket indexes dynamically
-                    const spacing = buckets[1].x - buckets[0].x;
-                    const startX = buckets[0].x;
-                    
-                    let bIndex = Math.round((ball.x - startX) / spacing);
-                    if (bIndex < 0) bIndex = 0;
-                    if (bIndex >= buckets.length) bIndex = buckets.length - 1;
-
+                    // Flash the exact bucket the server calculated
+                    const bIndex = ball.serverBucket !== undefined ? ball.serverBucket : 0;
                     const bucket = buckets[bIndex];
-                    bucket.flashTimer = 1.0; // Flash the bucket
-
-                    const payout = Math.floor(ball.bet * bucket.mult);
                     
-                    // Credit winning balance to cloud ledger [5]
-                    updateDoc(activeUserRef, {
-                        balance: userBalance + payout
-                    });
+                    if (bucket) bucket.flashTimer = 1.0; 
 
-                    // Add to bottom recent hit pill UI
-                    appendRecentHit(bucket.mult);
+                    // FIX: Database update is completely removed here.
+                    // The Cloudflare Server API already securely updated your balance when you pressed drop.
+
+                    // Add to bottom recent hit pill UI using the secure multiplier
+                    appendRecentHit(ball.multiplier);
                 }
 
-                // Render Active Ball
                 ctx.beginPath();
                 ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
                 ctx.fillStyle = "#ff5722";
                 ctx.shadowBlur = 8;
                 ctx.shadowColor = "#ff5722";
                 ctx.fill();
-                ctx.shadowBlur = 0; // reset
+                ctx.shadowBlur = 0; 
             });
 
-            // Filter out inactive balls from the array to maintain system speed
             balls = balls.filter(b => b.active);
-
             requestAnimationFrame(updatePhysicsLoop);
         }
 
@@ -467,14 +443,11 @@
             pill.innerText = `${mult}x`;
 
             recentHitsBar.insertBefore(pill, recentHitsBar.firstChild);
-
-            // Cap the UI at 15 items to avoid layout overflow
             if (recentHitsBar.children.length > 15) {
                 recentHitsBar.removeChild(recentHitsBar.lastChild);
             }
         }
 
-        // Fire
         initGame();
     </script>
 </body>
