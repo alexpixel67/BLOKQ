@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLOKQ | Crash</title>
+    <title>BLOKQ | Mines</title>
     <style>
         /* CSS RESET & CASINO THEME */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -12,7 +12,7 @@
             --bg-panel: #1e293b;
             --bg-hover: #334155;
             --accent-green: #00e701;
-            --accent-blue: #0ea5e9;
+            --accent-purple: #8b5cf6;
             --text-main: #94a3b8;
             --text-bright: #ffffff;
             --border-color: #334155;
@@ -24,23 +24,23 @@
 
         /* SIDEBAR / CONTROLS */
         aside { width: 320px; background-color: var(--bg-panel); padding: 25px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid var(--border-color); z-index: 5; }
-        .logo-back { font-size: 14px; font-weight: bold; color: var(--accent-blue); cursor: pointer; text-decoration: none; margin-bottom: 10px; display: inline-block; }
+        .logo-back { font-size: 14px; font-weight: bold; color: var(--accent-purple); cursor: pointer; text-decoration: none; margin-bottom: 10px; display: inline-block; }
         
         .control-group { display: flex; flex-direction: column; gap: 8px; }
         .control-label { font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; color: var(--text-main); display: flex; justify-content: space-between; }
         
-        .input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; align-items: center; }
-        .input-wrapper input { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; width: 100%; }
+        .input-wrapper { display: flex; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; align-items: center; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: var(--accent-purple); }
+        .input-wrapper input, .input-wrapper select { flex: 1; background: transparent; border: none; color: white; padding: 12px; outline: none; font-weight: bold; font-size: 14px; appearance: none; }
         .input-suffix { padding-right: 15px; font-weight: bold; color: #64748b; }
         .btn-mod { background: var(--bg-hover); border: none; color: white; width: 45px; height: 100%; font-weight: bold; cursor: pointer; border-left: 1px solid var(--border-color); transition: 0.2s; }
         .btn-mod:hover { background: #475569; }
 
-        .btn-action { background: var(--accent-blue); color: #000; border: none; padding: 18px; border-radius: 8px; font-weight: 900; font-size: 18px; text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3); width: 100%; margin-top: 10px; }
-        .btn-action:hover { background: #38bdf8; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5); }
+        .btn-action { background: var(--accent-purple); color: #fff; border: none; padding: 18px; border-radius: 8px; font-weight: 900; font-size: 16px; text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); width: 100%; margin-top: 10px; }
+        .btn-action:hover { background: #a78bfa; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5); }
         .btn-action:active { transform: translateY(1px); }
         
-        /* Dynamic Button States */
-        .btn-action.cashout { background: var(--accent-green); box-shadow: 0 4px 15px rgba(0, 231, 1, 0.3); }
+        .btn-action.cashout { background: var(--accent-green); color: #000; box-shadow: 0 4px 15px rgba(0, 231, 1, 0.3); }
         .btn-action.cashout:hover { background: #00c401; box-shadow: 0 6px 20px rgba(0, 231, 1, 0.5); }
         .btn-action.disabled { background: #475569; color: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; }
 
@@ -53,21 +53,37 @@
         .balance-box { background: var(--bg-panel); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: bold; display: flex; gap: 8px; align-items: center; }
         .balance-box span { color: var(--accent-green); }
 
-        /* GRAPH AREA */
-        .graph-container { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; padding: 40px; }
-        canvas { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* MULTIPLIER DISPLAY */
-        .multiplier-display { position: relative; z-index: 2; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .current-multi { font-size: 100px; font-weight: 900; color: white; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .multi-status { font-size: 18px; font-weight: bold; color: var(--text-main); margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        /* MULTIPLIER INFO PANEL */
+        .info-panel { display: flex; justify-content: center; gap: 20px; padding: 20px; background: rgba(30, 41, 59, 0.5); border-bottom: 1px solid var(--border-color); position: relative; }
+        .info-stat { background: var(--bg-dark); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; text-align: center; min-width: 150px; }
+        .info-stat .label { font-size: 11px; color: var(--text-main); text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .info-stat .value { font-size: 18px; color: white; font-weight: 900; font-variant-numeric: tabular-nums; }
 
-        /* RECENT HITS BAR */
-        .recent-hits { height: 50px; background: rgba(30, 41, 59, 0.8); border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; z-index: 10; position: relative; }
-        .hit-pill { padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; min-width: 55px; text-align: center; animation: popIn 0.2s ease-out forwards; }
-        .hit-pill.high { color: var(--accent-green); background: rgba(0, 231, 1, 0.1); border: 1px solid rgba(0, 231, 1, 0.2); }
-        .hit-pill.low { color: var(--error-red); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
-        @keyframes popIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .profit-display { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); font-size: 20px; font-weight: bold; color: var(--accent-green); opacity: 0; transition: 0.3s; }
+        .profit-display.show { opacity: 1; transform: translateY(-50%) scale(1.1); }
+
+        /* GRID AREA */
+        .grid-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 40px; }
+        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; background: var(--bg-panel); padding: 20px; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        
+        .tile { width: 80px; height: 80px; background: #334155; border-radius: 10px; cursor: pointer; position: relative; perspective: 1000px; transition: transform 0.1s, filter 0.3s; box-shadow: 0 4px 0 #1e293b; }
+        .tile:hover:not(.revealed):not(.disabled) { background: #475569; transform: translateY(-2px); }
+        .tile:active:not(.revealed):not(.disabled) { transform: translateY(2px); box-shadow: 0 0 0 #1e293b; }
+        .tile.disabled { cursor: not-allowed; }
+        
+        /* Flip Animation Inner */
+        .tile-inner { width: 100%; height: 100%; position: absolute; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
+        .tile.revealed .tile-inner { transform: rotateY(180deg); }
+        
+        .tile-front, .tile-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 40px; }
+        .tile-front { background: transparent; }
+        .tile-back { transform: rotateY(180deg); }
+        
+        .tile.safe .tile-back { background: rgba(0, 231, 1, 0.2); border: 2px solid var(--accent-green); box-shadow: inset 0 0 20px rgba(0, 231, 1, 0.1); }
+        .tile.mine .tile-back { background: rgba(239, 68, 68, 0.2); border: 2px solid var(--error-red); box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.1); }
+        
+        /* Auto-reveal faded style for unclicked tiles after game ends */
+        .tile.faded .tile-back { opacity: 0.4; border: 2px dashed #475569; background: transparent; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -75,7 +91,7 @@
     <aside>
         <div>
             <a href="index.html" class="logo-back">⬅ Return to Lobby</a>
-            <div class="header-title" style="margin-top: 5px;">🚀 CRASH</div>
+            <div class="header-title" style="margin-top: 5px;">💣 MINES</div>
         </div>
 
         <div class="control-group">
@@ -88,82 +104,95 @@
         </div>
 
         <div class="control-group">
-            <label class="control-label"><span>Auto Cashout</span> <span>(Optional)</span></label>
+            <label class="control-label">Mines</label>
             <div class="input-wrapper">
-                <input type="number" id="auto-cashout" value="2.00" step="0.1" min="1.01">
-                <div class="input-suffix">x</div>
+                <select id="mines-count">
+                    <!-- Javascript populates 1 to 24 -->
+                </select>
+                <div class="input-suffix">💣</div>
             </div>
         </div>
 
-        <button class="btn-action" id="action-btn">Start Game</button>
+        <button class="btn-action" id="action-btn">Bet</button>
         
         <div style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 10px;">
-            The multiplier will rise exponentially. Cash out before the crash to multiply your wager. If it crashes before you cash out, your wager is lost.
+            Find gems to increase your multiplier. Cash out at any time. Hitting a mine will instantly explode and lose your wager.
         </div>
     </aside>
 
     <main>
         <header>
-            <div class="header-title">UGC Crash Hub</div>
+            <div class="header-title">UGC Mines Hub</div>
             <div class="balance-box">
                 <span id="bq-balance">Loading...</span> BQ
             </div>
         </header>
 
-        <div class="graph-container" id="graph-container">
-            <canvas id="crash-canvas"></canvas>
-            <div class="multiplier-display">
-                <div class="current-multi" id="current-multi">1.00x</div>
-                <div class="multi-status" id="multi-status">Ready to Launch</div>
+        <div class="info-panel">
+            <div class="info-stat">
+                <div class="label">Current Multiplier</div>
+                <div class="value" id="current-multi" style="color: var(--text-bright);">1.00x</div>
             </div>
+            <div class="info-stat">
+                <div class="label">Next Tile Payout</div>
+                <div class="value" id="next-multi" style="color: var(--accent-green);">1.00x</div>
+            </div>
+            <div class="profit-display" id="profit-display">+0 BQ</div>
         </div>
 
-        <div class="recent-hits" id="recent-hits">
-            <!-- Crash history pills injected here -->
+        <div class="grid-container">
+            <div class="mines-grid" id="grid">
+                <!-- Javascript populates 25 tiles -->
+            </div>
         </div>
     </main>
 
-    <!-- FIREBASE AND CRASH ENGINE -->
+    <!-- FIREBASE & GAME ENGINE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, getIdToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // State variables
+        // Global State
         let auth = null, db = null, activeUser = null, activeUserRef = null;
         let userBalance = 0;
         let userIdToken = null;
         
-        // Game State Engine: 'idle' | 'starting' | 'running' | 'cashed_out' | 'crashed'
+        // Game State Engine: 'idle' | 'playing'
         let gameState = 'idle';
         let currentBet = 0;
-        let currentMulti = 1.00;
-        let crashPoint = 1.00;
-        let animationFrame = null;
-        let startTime = 0;
-        let targetAutoCashout = null;
+        let minesCount = 3;
+        let minePositions = [];
+        let revealedSafeCount = 0;
+        let currentMultiplier = 1.00;
+
+        const HOUSE_EDGE = 0.01; // 1% House Edge for local display math
+        const TOTAL_TILES = 25;
 
         // UI Elements
         const balanceDisplay = document.getElementById('bq-balance');
         const betInput = document.getElementById('bet-amount');
-        const autoCashoutInput = document.getElementById('auto-cashout');
+        const minesSelect = document.getElementById('mines-count');
         const actionBtn = document.getElementById('action-btn');
-        const multiDisplay = document.getElementById('current-multi');
-        const statusDisplay = document.getElementById('multi-status');
-        const recentHitsBar = document.getElementById('recent-hits');
-        
-        const canvas = document.getElementById('crash-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Resize Canvas dynamically
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            drawGraphIdle();
-        }
-        window.addEventListener('resize', resizeCanvas);
+        const currentMultiDisplay = document.getElementById('current-multi');
+        const nextMultiDisplay = document.getElementById('next-multi');
+        const profitDisplay = document.getElementById('profit-display');
+        const gridEl = document.getElementById('grid');
 
-        // Firebase Init
+        // Populate Mines Dropdown
+        for (let i = 1; i <= 24; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = i;
+            if (i === 3) opt.selected = true;
+            minesSelect.appendChild(opt);
+        }
+
+        // Modifiers
+        document.getElementById('bet-half-btn').onclick = () => betInput.value = Math.max(1, Math.floor(parseInt(betInput.value) / 2));
+        document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
+
+        // Init Firebase
         async function initGame() {
             try {
                 const response = await fetch('/api/config');
@@ -190,260 +219,247 @@
                         });
                     }
                 });
-
-                resizeCanvas();
             } catch (err) { console.error(err); }
+
+            buildGrid();
+            updateMultiPreviews(0);
         }
 
-        // Modifiers
-        document.getElementById('bet-half-btn').onclick = () => betInput.value = Math.max(1, Math.floor(parseInt(betInput.value) / 2));
-        document.getElementById('bet-double-btn').onclick = () => betInput.value = parseInt(betInput.value) * 2;
-
-        // Mathematical Crash Point Generation (House Edge: ~3%)
-        // Generated locally for visual sync in stateless version
-        function generateCrashPoint() {
-            const roll = Math.random();
-            if (roll < 0.03) return 1.00; // 3% instant crash
-            return Math.max(1.00, parseFloat((0.99 / (1 - roll)).toFixed(2)));
+        // Mathematical Multiplier Formula (Used locally for UI prediction)
+        function calculateMultiplier(gemsRevealed) {
+            if (gemsRevealed === 0) return 1.00;
+            let prob = 1.0;
+            for (let i = 0; i < gemsRevealed; i++) {
+                prob *= (TOTAL_TILES - minesCount - i) / (TOTAL_TILES - i);
+            }
+            return (1 - HOUSE_EDGE) / prob;
         }
 
-        // ==========================================
-        // GAME LOOP CONTROLLER
-        // ==========================================
+        function updateMultiPreviews(revealedCount) {
+            currentMultiplier = calculateMultiplier(revealedCount);
+            const nextMultiplier = calculateMultiplier(revealedCount + 1);
+            
+            currentMultiDisplay.innerText = `${currentMultiplier.toFixed(2)}x`;
+            
+            // If they won the max possible, hide the next multi
+            if (revealedCount >= TOTAL_TILES - minesCount) {
+                nextMultiDisplay.innerText = "MAX WIN";
+            } else {
+                nextMultiDisplay.innerText = `${nextMultiplier.toFixed(2)}x`;
+            }
+            
+            if (gameState === 'playing' && revealedCount > 0) {
+                const cashoutAmount = Math.floor(currentBet * currentMultiplier);
+                actionBtn.innerText = `Cash Out (${cashoutAmount} BQ)`;
+            }
+        }
+
+        // Build the Board UI
+        function buildGrid() {
+            gridEl.innerHTML = "";
+            for (let i = 0; i < TOTAL_TILES; i++) {
+                const tile = document.createElement('div');
+                tile.className = "tile disabled"; // Disabled until bet
+                tile.dataset.index = i;
+                
+                tile.innerHTML = `
+                    <div class="tile-inner">
+                        <div class="tile-front"></div>
+                        <div class="tile-back" id="back-${i}"></div>
+                    </div>
+                `;
+                
+                tile.addEventListener('click', () => handleTileClick(i, tile));
+                gridEl.appendChild(tile);
+            }
+        }
+
+        // Action Button Handler (Bet / Cashout)
         actionBtn.addEventListener('click', async () => {
-            if (gameState === 'idle' || gameState === 'crashed') {
+            if (gameState === 'idle') {
                 startGame();
-            } else if (gameState === 'running') {
+            } else if (gameState === 'playing' && revealedSafeCount > 0) {
                 cashOut();
             }
         });
 
         async function startGame() {
             currentBet = parseInt(betInput.value);
-            targetAutoCashout = parseFloat(autoCashoutInput.value);
+            minesCount = parseInt(minesSelect.value);
 
             if (isNaN(currentBet) || currentBet <= 0) return alert("Invalid Bet");
             if (currentBet > userBalance) return alert("Insufficient BQ Balance");
-            
-            // Lock UI
+
+            // Lock UI & Prepare state
+            gameState = 'playing';
             betInput.disabled = true;
-            autoCashoutInput.disabled = true;
-            gameState = 'starting';
+            minesSelect.disabled = true;
             actionBtn.className = "btn-action disabled";
+            actionBtn.innerText = "Starting Game...";
+            profitDisplay.classList.remove('show');
             
             try {
-                // Call secure wager API to deduct balance at start
+                // Call secure wager API to start game, deduct balance, and generate mines
                 const response = await fetch('/api/wager', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         idToken: userIdToken,
                         uid: activeUser.uid,
-                        gameType: 'crash',
-                        betAmount: currentBet
+                        gameType: 'mines',
+                        betAmount: currentBet,
+                        gameParams: { minesCount: minesCount }
                     })
                 });
 
                 const result = await response.json();
-                if (!result.success) throw new Error(result.error);
                 
-                // Update local balance
+                if (!result.success) {
+                    throw new Error(result.error || 'Game failed to start');
+                }
+
+                // Update local session state
                 userBalance = result.newBalance;
+                minePositions = result.gameDetails.minePositions;
+                revealedSafeCount = 0;
+
+                // Reset and Enable Grid
+                buildGrid(); 
+                document.querySelectorAll('.tile').forEach(t => t.classList.remove('disabled'));
+                updateMultiPreviews(0);
+
+                actionBtn.innerText = "Pick a Tile";
 
             } catch (err) {
-                alert('Game failed to start: ' + err.message);
+                console.error('Mines start error:', err);
+                alert('Start error: ' + err.message);
                 gameState = 'idle';
-                actionBtn.className = "btn-action";
                 betInput.disabled = false;
-                autoCashoutInput.disabled = false;
+                minesSelect.disabled = false;
+                actionBtn.className = "btn-action";
+                actionBtn.innerText = "Bet";
+            }
+        }
+
+        async function handleTileClick(index, tileEl) {
+            if (gameState !== 'playing') return;
+            if (tileEl.classList.contains('revealed')) return; // Can't click twice
+
+            const backEl = document.getElementById(`back-${index}`);
+            tileEl.classList.add('revealed');
+
+            // BOMB HIT
+            if (minePositions.includes(index)) {
+                tileEl.classList.add('mine');
+                backEl.innerText = "💣";
+                triggerLoss();
                 return;
             }
 
-            crashPoint = generateCrashPoint();
-            currentMulti = 1.00;
+            // SAFE GEM HIT
+            tileEl.classList.add('safe');
+            backEl.innerText = "💎";
+            revealedSafeCount++;
             
-            // 3 Second Countdown
-            let countdown = 3;
-            multiDisplay.style.color = "white";
-            statusDisplay.innerText = "Launching in...";
-            
-            let tick = setInterval(() => {
-                multiDisplay.innerText = `${countdown.toFixed(1)}s`;
-                countdown -= 0.1;
-                
-                if (countdown <= 0) {
-                    clearInterval(tick);
-                    launchRocket();
-                }
-            }, 100);
+            // Update the math
+            updateMultiPreviews(revealedSafeCount);
+            actionBtn.className = "btn-action cashout"; // Enable Cashout visually
+
+            // Auto-win if they clicked all safe tiles
+            if (revealedSafeCount === TOTAL_TILES - minesCount) {
+                cashOut();
+            }
         }
 
-        function launchRocket() {
-            gameState = 'running';
-            actionBtn.className = "btn-action cashout";
-            actionBtn.innerText = "Cash Out";
-            statusDisplay.innerText = "Rocket in Flight";
+        function triggerLoss() {
+            gameState = 'idle';
+            actionBtn.className = "btn-action";
+            actionBtn.innerText = "Bet";
+            betInput.disabled = false;
+            minesSelect.disabled = false;
             
-            startTime = Date.now();
-            animationFrame = requestAnimationFrame(updateGraph);
+            currentMultiDisplay.style.color = "var(--error-red)";
+            nextMultiDisplay.innerText = "--";
+
+            // The bet was already deducted securely on start, so we just reveal the board.
+            revealBoard(false);
         }
 
         async function cashOut() {
-            if (gameState !== 'running') return;
-            
-            gameState = 'cashed_out';
+            if (gameState !== 'playing') return;
+
+            gameState = 'idle';
             actionBtn.className = "btn-action disabled";
-            actionBtn.innerText = "Cashing Out...";
-            statusDisplay.innerText = "Securing Winnings...";
+            actionBtn.innerText = "Securing Winnings...";
             
             try {
-                // Call secure wager API to process cashout
+                // Call server to securely calculate winnings and credit the database
                 const response = await fetch('/api/wager', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         idToken: userIdToken,
                         uid: activeUser.uid,
-                        gameType: 'crash_cashout',
-                        betAmount: currentBet,
-                        gameParams: { cashoutMultiplier: parseFloat(currentMulti.toFixed(2)) }
+                        gameType: 'mines_cashout',
+                        betAmount: currentBet, // Original bet amount is required for server math
+                        gameParams: {
+                            minesCount: minesCount,
+                            revealedTiles: revealedSafeCount
+                        }
                     })
                 });
 
                 const result = await response.json();
-                if (result.success) {
-                    userBalance = result.newBalance;
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Cashout failed');
                 }
+
+                // Update local balance
+                userBalance = result.newBalance;
+
+                // Show Profit UI
+                const wonAmount = Math.floor(currentBet * result.multiplier);
+                profitDisplay.innerText = `+${wonAmount.toLocaleString()} BQ`;
+                profitDisplay.classList.add('show');
+
             } catch (err) {
-                console.error("Cashout API Error:", err);
+                console.error('Mines cashout error:', err);
+                alert('Cashout error: ' + err.message);
             }
 
-            actionBtn.innerText = "Cashed Out";
-            statusDisplay.innerText = "Success! Waiting for crash...";
-            multiDisplay.style.color = "var(--accent-green)";
-        }
-
-        function triggerCrash() {
-            gameState = 'crashed';
-            cancelAnimationFrame(animationFrame);
-            
-            multiDisplay.innerText = `${crashPoint.toFixed(2)}x`;
-            multiDisplay.style.color = "var(--error-red)";
-            statusDisplay.innerText = "CRASHED";
-            
+            // Reset UI
             actionBtn.className = "btn-action";
-            actionBtn.innerText = "Play Again";
-            
+            actionBtn.innerText = "Bet";
             betInput.disabled = false;
-            autoCashoutInput.disabled = false;
+            minesSelect.disabled = false;
             
-            appendRecentHit(crashPoint);
-            drawGraphCrashed();
+            currentMultiDisplay.style.color = "var(--accent-green)";
+            nextMultiDisplay.innerText = "--";
+
+            revealBoard(true);
         }
 
-        // ==========================================
-        // CANVAS GRAPHICS
-        // ==========================================
-        function updateGraph() {
-            if (gameState !== 'running' && gameState !== 'cashed_out') return;
-
-            // Exponential growth formula over time
-            const elapsedMs = Date.now() - startTime;
-            currentMulti = Math.pow(Math.E, 0.00006 * elapsedMs);
-
-            // Did it crash?
-            if (currentMulti >= crashPoint) {
-                currentMulti = crashPoint;
-                triggerCrash();
-                return;
-            }
-
-            // Auto Cashout trigger
-            if (gameState === 'running' && targetAutoCashout && currentMulti >= targetAutoCashout) {
-                cashOut();
-            }
-
-            // Render Text
-            if (gameState === 'running') {
-                multiDisplay.innerText = `${currentMulti.toFixed(2)}x`;
-            }
-
-            // Render Line Graphic
-            drawActiveGraph(elapsedMs);
-
-            animationFrame = requestAnimationFrame(updateGraph);
-        }
-
-        function drawActiveGraph(elapsed) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const padding = 20;
-            const startX = padding;
-            const startY = canvas.height - padding;
-            
-            // Dynamic width/height scaling to make graph look like it's zooming out
-            const totalX = canvas.width - padding * 2;
-            const totalY = canvas.height - padding * 2;
-            
-            // Growth curves
-            const progressX = Math.min(1, elapsed / 10000); 
-            const currentX = startX + (totalX * progressX);
-            
-            const curveIntensity = Math.pow(progressX, 2);
-            const currentY = startY - (totalY * curveIntensity);
-
-            // Draw Gradient Underneath Line
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.quadraticCurveTo(currentX * 0.8, startY, currentX, currentY);
-            ctx.lineTo(currentX, startY);
-            ctx.closePath();
-            
-            const gradient = ctx.createLinearGradient(0, startY, 0, 0);
-            gradient.addColorStop(0, "rgba(14, 165, 233, 0)");
-            gradient.addColorStop(1, "rgba(14, 165, 233, 0.4)");
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Draw Line
-            ctx.beginPath();
-            ctx.moveTo(startX, startY);
-            ctx.quadraticCurveTo(currentX * 0.8, startY, currentX, currentY);
-            ctx.strokeStyle = "var(--accent-blue)";
-            ctx.lineWidth = 4;
-            ctx.stroke();
-
-            // Draw Rocket/Dot
-            ctx.beginPath();
-            ctx.arc(currentX, currentY, 6, 0, Math.PI * 2);
-            ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = "var(--accent-blue)";
-            ctx.shadowBlur = 10;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        function drawGraphIdle() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-            ctx.moveTo(20, canvas.height - 20);
-            ctx.lineTo(canvas.width - 20, canvas.height - 20);
-            ctx.strokeStyle = "#334155";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-
-        function drawGraphCrashed() {
-            ctx.strokeStyle = "var(--error-red)";
-            ctx.stroke();
-        }
-
-        function appendRecentHit(mult) {
-            const pill = document.createElement('div');
-            pill.className = `hit-pill ${mult >= 2.0 ? 'high' : 'low'}`;
-            pill.innerText = `${mult.toFixed(2)}x`;
-            recentHitsBar.insertBefore(pill, recentHitsBar.firstChild);
-            if (recentHitsBar.children.length > 15) recentHitsBar.removeChild(recentHitsBar.lastChild);
+        // End of Game Visual Reveal
+        function revealBoard(isWin) {
+            // Disable all tiles
+            document.querySelectorAll('.tile').forEach((t, i) => {
+                t.classList.add('disabled');
+                
+                // If not revealed yet, fade and reveal it
+                if (!t.classList.contains('revealed')) {
+                    t.classList.add('revealed', 'faded');
+                    const backEl = document.getElementById(`back-${i}`);
+                    
+                    if (minePositions.includes(i)) {
+                        t.classList.add('mine');
+                        backEl.innerText = "💣";
+                    } else {
+                        t.classList.add('safe');
+                        backEl.innerText = "💎";
+                    }
+                }
+            });
         }
 
         initGame();
