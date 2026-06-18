@@ -20,10 +20,15 @@ export async function onRequestPost(context) {
     }
 
     const userData = await getRes.json();
-    const currentBalance = parseInt(userData.fields.balance.integerValue);
+    
+    // Safely parse balance (handles both integer and double formats from Firestore)
+    let currentBalance = 0;
+    if (userData.fields && userData.fields.balance) {
+      currentBalance = parseInt(userData.fields.balance.integerValue || userData.fields.balance.doubleValue || 0);
+    }
 
     // CRITICAL FIX: Only check for sufficient balance if initiating a NEW bet. 
-    // If it's a cashout, the bet was already deducted, so balance might legitimately be 0 if they went all-in!
+    // If it's a cashout, the bet was already deducted, so balance might legitimately be 0 if they went all-in.
     const isCashout = gameType === 'mines_cashout' || gameType === 'crash_cashout';
     if (!isCashout && currentBalance < betAmount) {
       return new Response(JSON.stringify({ error: "Insufficient balance" }), { status: 400 });
@@ -41,7 +46,7 @@ export async function onRequestPost(context) {
       const targetNumber = parseFloat(gameParams.targetNumber || 50.50);
       const isRollOver = gameParams.isRollOver !== false;
       
-      // SERVER-SIDE MATH: Recalculate win chance and payout (Never trust client)
+      // SERVER-SIDE MATH: Recalculate win chance and payout
       let winChance = isRollOver ? (100.00 - targetNumber) : targetNumber;
       if (winChance < 0.01) winChance = 0.01;
       if (winChance > 98.00) winChance = 98.00;
@@ -63,7 +68,7 @@ export async function onRequestPost(context) {
       const targetMultiplier = parseFloat(gameParams.targetMultiplier || 2.0);
       const roll = Math.random();
       
-      const rollResult = parseFloat((0.99 / (1 - roll)).toFixed(2)); // 1% House Edge Exponential Curve
+      const rollResult = parseFloat((0.99 / (1 - roll)).toFixed(2)); // 1% House Edge
       const isWin = rollResult >= targetMultiplier;
       
       multiplier = isWin ? targetMultiplier : 0;
@@ -126,7 +131,7 @@ export async function onRequestPost(context) {
       const revealedTiles = parseInt(gameParams.revealedTiles || 0);
       const minesCount = parseInt(gameParams.minesCount || 3);
       
-      // Re-calculate the multiplier on the server based on revealed tiles
+      // Re-calculate the multiplier on the server
       let prob = 1.0;
       for (let i = 0; i < revealedTiles; i++) {
           prob *= (25 - minesCount - i) / (25 - i);
@@ -134,7 +139,6 @@ export async function onRequestPost(context) {
       const actualMultiplier = (1 - 0.01) / prob; // 1% House Edge
       
       multiplier = actualMultiplier;
-      // Because we already deducted the bet on start, we just add the winnings
       newBalance = currentBalance + Math.floor(betAmount * multiplier);
       gameDetails = { revealedTiles, multiplier };
     }
@@ -150,7 +154,6 @@ export async function onRequestPost(context) {
     else if (gameType === 'crash_cashout') {
       const cashoutMultiplier = parseFloat(gameParams.cashoutMultiplier || 1.0);
       multiplier = cashoutMultiplier;
-      // Add winnings to balance
       newBalance = currentBalance + Math.floor(betAmount * multiplier);
       gameDetails = { status: "cashed_out", multiplier };
     }
@@ -158,11 +161,12 @@ export async function onRequestPost(context) {
     // ==========================================
     // 💾 SECURE DATABASE EXECUTION
     // ==========================================
+    
+    // FIX: Using updateMask so we ONLY send the balance field. 
+    // This prevents the backend from crashing when it can't find other fields.
     const patchBody = {
       fields: {
-        balance: { integerValue: newBalance.toString() },
-        username: { stringValue: userData.fields.username.stringValue },
-        email: { stringValue: userData.fields.email.stringValue }
+        balance: { integerValue: newBalance.toString() }
       }
     };
 
