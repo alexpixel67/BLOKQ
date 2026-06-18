@@ -144,12 +144,13 @@
     <!-- FIREBASE AND LIMBO ENGINE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, getIdToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Global State
         let auth = null, db = null, activeUser = null, activeUserRef = null;
         let userBalance = 0;
+        let userIdToken = null;
         
         // Math Engine Constants (99% RTP / 1% House Edge)
         const RTP_CONSTANT = 99.00;
@@ -186,11 +187,12 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                onAuthStateChanged(auth, user => {
+                onAuthStateChanged(auth, async user => {
                     if (!user) window.location.href = "login.html";
                     else {
                         activeUser = user;
                         activeUserRef = doc(db, "users", user.uid);
+                        userIdToken = await getIdToken(user);
                         onSnapshot(activeUserRef, (docSnap) => {
                             if (docSnap.exists()) {
                                 userBalance = docSnap.data().balance;
@@ -241,15 +243,6 @@
         // ==========================================
         // EXPONENTIAL MATHEMATICS & ROLL EXECUTION
         // ==========================================
-        function generateLimboResult() {
-            // Standard crypto formula for an exponential multiplier curve
-            // It generates a float from 0 to 1, and inverts it.
-            const roll = Math.random();
-            if (roll < 0.01) return 1.00; // 1% House Edge instant crash
-            
-            const result = 0.99 / (1 - roll);
-            return Math.max(1.00, result);
-        }
 
         actionBtn.addEventListener('click', async () => {
             const betAmount = parseInt(betInput.value);
@@ -273,28 +266,55 @@
         });
 
         async function finalizeRoll(betAmount) {
-            const rollResult = generateLimboResult();
-            const isWin = rollResult >= targetMultiplier;
-            
-            // Format visually (e.g. show 1,000,000.00x nicely)
-            let displayVal = rollResult < 1000 ? rollResult.toFixed(2) : Math.floor(rollResult).toLocaleString();
+            try {
+                // Call server-side wager API with game parameters
+                const response = await fetch('/api/wager', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken: userIdToken,
+                        uid: activeUser.uid,
+                        gameType: 'limbo',
+                        betAmount: betAmount,
+                        gameParams: {
+                            targetMultiplier: targetMultiplier
+                        }
+                    })
+                });
 
-            const payoutAmount = isWin ? Math.floor(betAmount * targetMultiplier) : 0;
-            const netChange = payoutAmount - betAmount;
+                const result = await response.json();
+                
+                if (!result.success) {
+                    alert(result.error || 'Game failed');
+                    actionBtn.disabled = false;
+                    return;
+                }
 
-            // Database Sync
-            await updateDoc(activeUserRef, { balance: userBalance + netChange });
+                // Update local balance from server response
+                userBalance = result.newBalance;
+                
+                // Extract server-calculated results
+                const { rollResult, isWin } = result.gameDetails;
+                
+                // Format visually (e.g. show 1,000,000.00x nicely)
+                let displayVal = rollResult < 1000 ? rollResult.toFixed(2) : Math.floor(rollResult).toLocaleString();
 
-            // Render Final Result
-            resultNumber.innerText = displayVal;
-            resultDisplay.className = `result-display ${isWin ? 'win' : 'loss'}`;
+                // Render Final Result
+                resultNumber.innerText = displayVal;
+                resultDisplay.className = `result-display ${isWin ? 'win' : 'loss'}`;
 
-            if (isWin) {
-                profitDisplay.innerText = `+${payoutAmount.toLocaleString()} BQ`;
-                profitDisplay.classList.add('show');
+                if (isWin) {
+                    const payoutAmount = Math.floor(betAmount * targetMultiplier);
+                    profitDisplay.innerText = `+${payoutAmount.toLocaleString()} BQ`;
+                    profitDisplay.classList.add('show');
+                }
+
+                appendRecentHit(rollResult, isWin);
+
+            } catch (err) {
+                console.error('Limbo game error:', err);
+                alert('Game error: ' + err.message);
             }
-
-            appendRecentHit(rollResult, isWin);
 
             actionBtn.disabled = false;
         }
